@@ -1,0 +1,106 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArtisanConnect - Contact</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" 
+        integrity="sha512-Fo3rlrZj/kTcKIV3Q8qgVjZCvi6++P+RheJ7E6wb3G5jOxAwBp6ECI1cld2VxMB4QqGfJefxR1aK/ZeJKYyJg==" 
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-light ac-navbar sticky-top" aria-label="Navigation principale">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="index.html">
+        <span class="brand-icon"><i class="fas fa-screwdriver-wrench"></i></span>
+        <div class="d-flex flex-column lh-sm">
+          <span class="fw-bold">ArtisanConnect</span>
+          <small class="text-muted d-none d-xl-block">Agenda & acomptes sécurisés</small>
+        </div>
+      </a>
+      <div class="d-flex align-items-center gap-2 ms-auto">
+        <button id="themeToggle" class="btn btn-icon" type="button" aria-label="Activer le mode sombre" aria-pressed="false">
+          <i class="fas fa-moon" aria-hidden="true"></i>
+        </button>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Basculer la navigation principale">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav align-items-lg-center nav-pill-group">
+          <li class="nav-item">
+            <a class="nav-link" href="index.html"><i class="fas fa-home"></i> Accueil</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="about.html"><i class="fas fa-info-circle"></i> A propos</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="services.html"><i class="fas fa-cogs"></i> Services</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="index.html#booking"><i class="fas fa-calendar-check"></i> Rendez-vous</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="contact.html"><i class="fas fa-envelope"></i> Contact</a>
+          </li>
+        </ul>
+        <a class="btn btn-primary nav-cta ms-lg-3 mt-3 mt-lg-0" href="index.html#booking">
+          <i class="fas fa-bolt me-1"></i> Ouvrir mes créneaux
+        </a>
+      </div>
+    </div>
+  </nav>
+  <!-- Contenu principal -->
+  <main class="container my-5">
+    <h2>Contactez-nous</h2>
+    <form id="contactForm" novalidate>
+      <div class="mb-3">
+        <label for="name" class="form-label">Nom</label>
+        <input type="text" class="form-control" id="name" required>
+        <div class="invalid-feedback">
+          Veuillez entrer votre nom.
+        </div>
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" id="email" required>
+        <div class="invalid-feedback">
+          Veuillez entrer un email valide.
+        </div>
+      </div>
+      <div class="mb-3">
+        <label for="message" class="form-label">Message</label>
+        <textarea class="form-control" id="message" rows="5" required></textarea>
+        <div class="invalid-feedback">
+          Veuillez entrer votre message.
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-paper-plane"></i> Envoyer
+      </button>
+      <a href="index.html#booking" class="btn btn-outline-secondary ms-2">Prendre rendez-vous en ligne</a>
+    </form>
+  </main>
+
+  <!-- Bouton Back-to-Top -->
+  <button id="backToTop" class="btn btn-secondary" aria-label="Retour en haut"><i class="fas fa-arrow-up"></i></button>
+
+  <!-- Pied de page -->
+  <footer class="bg-light text-center py-3">
+    <div class="container">
+      <p>� 2025 ArtisanConnect. Tous droits r�serv�s.</p>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/form-validation.js"></script>
+  <script src="js/theme-toggle.js"></script>
+  <script src="js/back-to-top.js"></script>
+</body>
+</html>
+
+

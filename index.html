@@ -1,0 +1,523 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArtisanConnect - Gestion de rendez-vous pour artisans</title>
+  <!-- Bootstrap CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" 
+        integrity="sha512-Fo3rlrZj/kTcKIV3Q8qgVjZCvi6++P+RheJ7E6wb3G5jOxAwBp6ECI1cld2VxMB4QqGfJefxR1aK/ZeJKYyJg==" 
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-light ac-navbar sticky-top" aria-label="Navigation principale">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="index.html">
+        <span class="brand-icon"><i class="fas fa-screwdriver-wrench"></i></span>
+        <div class="d-flex flex-column lh-sm">
+          <span class="fw-bold">ArtisanConnect</span>
+          <small class="text-muted d-none d-xl-block">Agenda & acomptes sécurisés</small>
+        </div>
+      </a>
+      <div class="d-flex align-items-center gap-2 ms-auto">
+        <button id="themeToggle" class="btn btn-icon" type="button" aria-label="Activer le mode sombre" aria-pressed="false">
+          <i class="fas fa-moon" aria-hidden="true"></i>
+        </button>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Basculer la navigation principale">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      </div>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+        <ul class="navbar-nav align-items-lg-center nav-pill-group">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="index.html"><i class="fas fa-home"></i> Accueil</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="about.html"><i class="fas fa-info-circle"></i> A propos</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="services.html"><i class="fas fa-cogs"></i> Services</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#booking"><i class="fas fa-calendar-check"></i> Rendez-vous</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="contact.html"><i class="fas fa-envelope"></i> Contact</a>
+          </li>
+        </ul>
+        <a class="btn btn-primary nav-cta ms-lg-3 mt-3 mt-lg-0" href="#booking">
+          <i class="fas fa-bolt me-1"></i> Ouvrir mes créneaux
+        </a>
+      </div>
+    </div>
+  </nav>
+  <!-- Hero Section -->
+  <header class="bg-primary text-white py-5">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-6">
+          <h1>Simplifiez la gestion de vos rendez-vous clients</h1>
+          <p class="lead">La plateforme tout-en-un pour artisans et petites entreprises qui veulent gagner du temps et d�velopper leur activit�.</p>
+          <div class="d-flex flex-wrap gap-3 mb-4">
+            <a href="#booking" class="btn btn-light btn-lg">Ouvrir mes cr�neaux</a>
+            <a href="#features" class="btn btn-outline-light btn-lg">D�couvrir les fonctionnalit�s</a>
+          </div>
+          <div class="d-flex flex-wrap gap-5">
+            <div class="text-center">
+              <span class="d-block fw-bold fs-4">+500</span>
+              <span class="small">artisans satisfaits</span>
+            </div>
+            <div class="text-center">
+              <span class="d-block fw-bold fs-4">30%</span>
+              <span class="small">de temps gagn�</span>
+            </div>
+            <div class="text-center">
+              <span class="d-block fw-bold fs-4">4.9/5</span>
+              <span class="small">satisfaction clients</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="bg-white rounded-3 p-3 text-dark">
+            <div class="d-flex gap-2 mb-3">
+              <span class="bg-danger rounded-circle window-dot"></span>
+              <span class="bg-warning rounded-circle window-dot"></span>
+              <span class="bg-success rounded-circle window-dot"></span>
+            </div>
+            <div>
+              <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">Lun 15 Jan</h6>
+              </div>
+              <div class="border rounded p-3 mb-2">
+                <div class="d-flex justify-content-between">
+                  <span class="fw-bold">09:00</span>
+                  <span>M. Dupont - Plomberie</span>
+                </div>
+              </div>
+              <div class="border rounded p-3 mb-2">
+                <div class="d-flex justify-content-between">
+                  <span class="fw-bold">11:30</span>
+                  <span>Mme Martin - �lectricit�</span>
+                </div>
+              </div>
+              <div class="border rounded p-3">
+                <div class="d-flex justify-content-between">
+                  <span class="fw-bold">14:00</span>
+                  <span>M. Leroy - Chauffage</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Booking Section -->
+  <section class="container my-5" id="booking">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+      <div>
+        <p class="text-uppercase text-primary fw-bold small mb-1">Prise de rendez-vous en ligne</p>
+        <h2 class="mb-1">Cr�ez vos cr�neaux, encaissez un acompte, confirmez par email/SMS</h2>
+        <p class="text-muted mb-0">S�lection du service et de la dur�e, paiement d'acompte, confirmation imm�diate et lien de modification/annulation pour le client.</p>
+      </div>
+      <span class="badge bg-success align-self-start">Nouveau</span>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="card shadow-sm booking-card">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <div>
+                <div class="text-muted small">�tape 1</div>
+                <h4 class="mb-0">R�server un cr�neau</h4>
+              </div>
+              <span class="badge bg-primary-subtle text-primary fw-semibold">Acompte s�curis�</span>
+            </div>
+            <form id="bookingForm" novalidate>
+              <div class="row g-3 mb-3">
+                <div class="col-md-7">
+                  <label for="serviceSelect" class="form-label">Service et dur�e</label>
+                  <select class="form-select" id="serviceSelect" required aria-describedby="serviceDetails"></select>
+                  <div class="form-text" id="serviceDetails">Choisissez le service � planifier.</div>
+                </div>
+                <div class="col-md-5">
+                  <div class="payment-summary h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <span class="fw-semibold">Acompte estim�</span>
+                      <span class="badge bg-light text-dark" id="depositLabel">--</span>
+                    </div>
+                    <div class="h4 mb-0" id="depositAmount">--</div>
+                    <div class="text-muted small">Solde � r�gler sur place apr�s intervention.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="row g-3 mb-3 align-items-end">
+                <div class="col-md-6">
+                  <label for="dateInput" class="form-label">Date souhait�e</label>
+                  <input type="date" class="form-control" id="dateInput" required>
+                </div>
+                <div class="col-md-6 text-md-end">
+                  <div class="text-muted small">Cr�neaux ouverts de 8h30 � 18h (pause 12h-13h).</div>
+                  <button type="button" class="btn btn-link p-0 small" id="refreshSlots">Actualiser les cr�neaux</button>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <label class="form-label mb-0">Cr�neaux disponibles</label>
+                  <span class="small text-muted" id="slotHint">S�lectionnez un cr�neau</span>
+                </div>
+                <div id="slotList" class="slot-grid" aria-live="polite"></div>
+                <div class="invalid-feedback d-block" id="slotError" style="display:none;">Veuillez choisir un cr�neau libre.</div>
+              </div>
+
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="nameInput" class="form-label">Nom complet</label>
+                  <input type="text" class="form-control" id="nameInput" required>
+                </div>
+                <div class="col-md-6">
+                  <label for="emailInput" class="form-label">Email</label>
+                  <input type="email" class="form-control" id="emailInput" required>
+                </div>
+                <div class="col-md-6">
+                  <label for="phoneInput" class="form-label">T�l�phone (SMS)</label>
+                  <input type="tel" class="form-control" id="phoneInput" placeholder="+33 6 12 34 56 78" required>
+                </div>
+              </div>
+
+              <div class="row g-3 mb-3">
+                <div class="col-md-8">
+                  <div class="payment-box">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="fw-semibold">Paiement d'acompte</span>
+                      <span class="badge bg-light text-dark">Carte bancaire</span>
+                    </div>
+                    <div class="row g-2">
+                      <div class="col-7">
+                        <label for="cardNumber" class="form-label">Num�ro de carte</label>
+                        <input type="text" class="form-control" id="cardNumber" inputmode="numeric" maxlength="19" placeholder="4242 4242 4242 4242" required>
+                      </div>
+                      <div class="col-3">
+                        <label for="cardExpiry" class="form-label">Exp.</label>
+                        <input type="text" class="form-control" id="cardExpiry" placeholder="MM/AA" required>
+                      </div>
+                      <div class="col-2">
+                        <label for="cardCvc" class="form-label">CVC</label>
+                        <input type="text" class="form-control" id="cardCvc" maxlength="4" required>
+                      </div>
+                    </div>
+                    <div class="form-text">Simulation de paiement s�curis� pour enregistrer l'acompte.</div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="notif-box h-100">
+                    <p class="fw-semibold mb-2">Notifications</p>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="emailNotif" checked>
+                      <label class="form-check-label" for="emailNotif">Confirmation email</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" id="smsNotif" checked>
+                      <label class="form-check-label" for="smsNotif">SMS de rappel</label>
+                    </div>
+                    <p class="small text-muted mb-0">Lien de modification/annulation envoy� automatiquement.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div>
+                  <div class="fw-semibold">Total acompte � r�gler : <span id="depositAmountInline">--</span></div>
+                  <div class="text-muted small">Le cr�neau est bloqu� d�s confirmation et le client re�oit email + SMS.</div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg">Confirmer et payer l'acompte</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="alert alert-success d-none mt-3" id="bookingConfirmation" role="status" aria-live="polite">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <h5 class="mb-1">R�servation confirm�e</h5>
+              <p class="mb-2" id="confirmationDetails"></p>
+              <p class="mb-0 small text-muted">Un email et un SMS ont �t� envoy�s avec le lien de modification/annulation.</p>
+            </div>
+            <span class="badge bg-success-subtle text-success">OK</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h5 class="mb-0">R�sum� en direct</h5>
+              <span class="badge bg-secondary-subtle text-secondary">Client</span>
+            </div>
+            <ul class="list-unstyled mb-0" id="liveSummary">
+              <li class="d-flex justify-content-between mb-2"><span>Service</span><strong>--</strong></li>
+              <li class="d-flex justify-content-between mb-2"><span>Dur�e</span><strong>--</strong></li>
+              <li class="d-flex justify-content-between mb-2"><span>Cr�neau</span><strong>--</strong></li>
+              <li class="d-flex justify-content-between mb-2"><span>Acompte</span><strong>--</strong></li>
+            </ul>
+            <hr>
+            <p class="small text-muted mb-0">Les cr�neaux s'adaptent automatiquement selon la dur�e choisie. Annulation gratuite jusqu'� 24h avant.</p>
+          </div>
+        </div>
+
+        <div class="card shadow-sm mb-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div>
+                <h5 class="mb-1">Synchronisation calendriers</h5>
+                <p class="small text-muted mb-0">Google, Outlook et Apple : blocage auto des indispos + push des rendez-vous confirmes.</p>
+              </div>
+              <button class="btn btn-outline-primary btn-sm" id="syncCalendarsBtn"><i class="fas fa-rotate"></i> Sync</button>
+            </div>
+            <div id="calendarSyncStatus" class="small text-muted mb-2">Aucun calendrier connecte pour l'instant.</div>
+            <div id="calendarProviders" class="calendar-provider-list mb-3"></div>
+            <div class="calendar-busy">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-semibold">Indisponibilites importees</span>
+                <span class="badge bg-light text-dark" id="busyCountBadge">0</span>
+              </div>
+              <div id="calendarBusyList" class="busy-list small text-muted"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="mb-0">Cr�neaux ouverts (7 prochains jours)</h5>
+              <i class="fas fa-bolt text-warning"></i>
+            </div>
+            <div id="weeklySlots" class="weekly-slots"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Manage Section -->
+  <section class="container my-5" id="manage">
+    <div class="row g-4">
+      <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div>
+                <div class="text-muted small">�tape 2</div>
+                <h4 class="mb-0">Modifier ou annuler</h4>
+              </div>
+              <span class="badge bg-info-subtle text-info">Self-service</span>
+            </div>
+            <form id="manageForm" novalidate>
+              <div class="mb-3">
+                <label for="manageCode" class="form-label">Code de r�servation</label>
+                <input type="text" class="form-control" id="manageCode" placeholder="AC-XXXXXX" required>
+              </div>
+              <div class="mb-3">
+                <label for="manageEmail" class="form-label">Email utilis�</label>
+                <input type="email" class="form-control" id="manageEmail" required>
+              </div>
+              <button type="submit" class="btn btn-outline-primary">Retrouver mon rendez-vous</button>
+            </form>
+
+            <div class="mt-3 d-none" id="manageResult">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">D�tails du rendez-vous</h6>
+                <span class="badge" id="bookingStatusBadge">--</span>
+              </div>
+              <ul class="list-unstyled mb-3" id="bookingDetails"></ul>
+              <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-primary flex-grow-1" id="rescheduleBtn">Modifier le cr�neau</button>
+                <button class="btn btn-outline-danger flex-grow-1" id="cancelBtn">Annuler</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <h5 class="mb-0">Nouveau cr�neau</h5>
+              <i class="fas fa-clock text-primary"></i>
+            </div>
+            <div id="reschedulePanel" class="d-none">
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  <label for="rescheduleDate" class="form-label">Date</label>
+                  <input type="date" class="form-control" id="rescheduleDate">
+                </div>
+                <div class="col-md-6">
+                  <div class="text-muted small">Cr�neaux adaptatifs selon la dur�e.</div>
+                  <button type="button" class="btn btn-link p-0 small" id="refreshReschedule">Actualiser</button>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Choisir un cr�neau</label>
+                <div id="rescheduleSlots" class="slot-grid" aria-live="polite"></div>
+              </div>
+              <button class="btn btn-success" id="confirmReschedule">Valider la modification</button>
+            </div>
+            <div id="reschedulePlaceholder" class="text-muted">S�lectionnez un rendez-vous pour ouvrir les options de modification.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <main class="container my-5" id="features">
+    <section class="text-center mb-5">
+      <h2 class="mb-4">Des fonctionnalit�s con�ues pour les artisans</h2>
+      <div class="row">
+        <div class="col-md-3 mb-4">
+          <i class="fas fa-calendar-alt display-4 mb-3 text-primary" aria-hidden="true"></i>
+          <h4>Calendrier intelligent</h4>
+          <p class="text-muted">Planifiez vos rendez-vous facilement avec un calendrier visuel et intuitif.</p>
+        </div>
+        <div class="col-md-3 mb-4">
+          <i class="fas fa-bell display-4 mb-3 text-primary" aria-hidden="true"></i>
+          <h4>Rappels automatiques</h4>
+          <p class="text-muted">Envoyez des SMS et emails de rappel pour r�duire les absences.</p>
+        </div>
+        <div class="col-md-3 mb-4">
+          <i class="fas fa-credit-card display-4 mb-3 text-primary" aria-hidden="true"></i>
+          <h4>Paiements en ligne</h4>
+          <p class="text-muted">Acceptez les r�servations avec acompte et paiements s�curis�s.</p>
+        </div>
+        <div class="col-md-3 mb-4">
+          <i class="fas fa-chart-line display-4 mb-3 text-primary" aria-hidden="true"></i>
+          <h4>Analytics avanc�s</h4>
+          <p class="text-muted">Suivez vos performances et optimisez votre planning.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="text-center">
+      <h2 class="mb-4">Des tarifs adapt�s � votre activit�</h2>
+      <div class="row">
+        <div class="col-md-4 mb-4">
+          <div class="card h-100">
+            <div class="card-body">
+              <h3 class="card-title">Starter</h3>
+              <div class="display-4 fw-bold text-primary">Gratuit</div>
+              <ul class="list-unstyled my-4">
+                <li class="mb-2">1 artisan</li>
+                <li class="mb-2">10 rendez-vous/mois</li>
+                <li class="mb-2">Support basic</li>
+              </ul>
+              <a href="#booking" class="btn btn-outline-primary w-100">Commencer</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4 mb-4">
+          <div class="card h-100 border-primary position-relative">
+            <div class="card-body">
+              <span class="badge bg-primary position-absolute top-0 start-50 translate-middle">Populaire</span>
+              <h3 class="card-title">Pro</h3>
+              <div class="display-4 fw-bold text-primary">29�<span class="fs-6 text-muted">/mois</span></div>
+              <ul class="list-unstyled my-4">
+                <li class="mb-2">3 artisans</li>
+                <li class="mb-2">Rendez-vous illimit�s</li>
+                <li class="mb-2">Rappels SMS</li>
+                <li class="mb-2">Support prioritaire</li>
+              </ul>
+              <a href="#booking" class="btn btn-primary w-100">Essai gratuit 14j</a>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4 mb-4">
+          <div class="card h-100">
+            <div class="card-body">
+              <h3 class="card-title">Business</h3>
+              <div class="display-4 fw-bold text-primary">79�<span class="fs-6 text-muted">/mois</span></div>
+              <ul class="list-unstyled my-4">
+                <li class="mb-2">10 artisans</li>
+                <li class="mb-2">Analytics avanc�s</li>
+                <li class="mb-2">Int�grations API</li>
+                <li class="mb-2">Support 24/7</li>
+              </ul>
+              <a href="contact.html" class="btn btn-outline-primary w-100">Nous contacter</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Bouton Back-to-Top -->
+  <button id="backToTop" class="btn btn-secondary" aria-label="Retour en haut"><i class="fas fa-arrow-up"></i></button>
+
+  <!-- Footer -->
+  <footer class="bg-light py-5">
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-3 mb-4">
+          <h5>ArtisanConnect</h5>
+          <p class="text-muted">La solution de gestion de rendez-vous pour artisans modernes.</p>
+        </div>
+        <div class="col-lg-3 mb-4">
+          <h6>Produit</h6>
+          <div class="d-flex flex-column">
+            <a href="#features" class="text-muted text-decoration-none mb-2">Fonctionnalit�s</a>
+            <a href="#booking" class="text-muted text-decoration-none mb-2">Tarifs</a>
+            <a href="#" class="text-muted text-decoration-none mb-2">API</a>
+          </div>
+        </div>
+        <div class="col-lg-3 mb-4">
+          <h6>Support</h6>
+          <div class="d-flex flex-column">
+            <a href="#" class="text-muted text-decoration-none mb-2">Centre d'aide</a>
+            <a href="contact.html" class="text-muted text-decoration-none mb-2">Contact</a>
+            <a href="#" class="text-muted text-decoration-none mb-2">Status</a>
+          </div>
+        </div>
+        <div class="col-lg-3 mb-4">
+          <h6>L�gal</h6>
+          <div class="d-flex flex-column">
+            <a href="#" class="text-muted text-decoration-none mb-2">CGV</a>
+            <a href="#" class="text-muted text-decoration-none mb-2">Confidentialit�</a>
+            <a href="#" class="text-muted text-decoration-none mb-2">Mentions l�gales</a>
+          </div>
+        </div>
+      </div>
+      <hr>
+      <div class="text-center">
+        <p class="text-muted mb-0">� 2024 ArtisanConnect. Tous droits r�serv�s.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS Bundle CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Scripts personnalis�s -->
+  <script src="js/form-validation.js"></script>
+  <script src="js/back-to-top.js"></script>
+  <script src="js/theme-toggle.js"></script>
+  <script src="js/booking.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
