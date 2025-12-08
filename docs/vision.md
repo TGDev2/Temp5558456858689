@@ -2,7 +2,7 @@
 
 ## Problématique utilisateur
 
-Les artisans (plombiers, électriciens, chauffagistes, multi‑services…) perdent un temps considérable à gérer leurs rendez-vous par téléphone ou messages. Ils subissent des annulations tardives, des « no-shows » non facturés et doivent jongler entre plusieurs calendriers personnels et professionnels. Demander un acompte est souvent gênant ou compliqué, ce qui augmente les risques de créneaux perdus.
+Les artisans (plombiers, électriciens, chauffagistes, multi-services…) perdent un temps considérable à gérer leurs rendez-vous par téléphone ou messages. Ils subissent des annulations tardives, des « no-shows » non facturés et doivent jongler entre plusieurs calendriers personnels et professionnels. Demander un acompte est souvent gênant ou compliqué, ce qui augmente les risques de créneaux perdus.
 
 Problème central : **Comment permettre à un artisan de gérer un agenda fiable, d’éviter les annulations coûteuses et d’encaisser un acompte facilement, sans complexité technique ni charge administrative supplémentaire ?**
 
@@ -57,6 +57,23 @@ Prochaines évolutions naturelles (pas encore implémentées mais cohérentes) :
 * intégration d’un prestataire de paiement (Stripe ou équivalent)
 * export ICS / connecteurs réels
 * système d’événements + logs d’activité pour fiabilité
+
+---
+
+## Contrat fonctionnel du MVP
+
+Le **modèle de données** et le **contrat d’API de réservation** utilisés par ArtisanConnect sont décrits de manière formelle dans le document `docs/domain-model.md`.  
+Ce document définit notamment :
+
+* les entités centrales (Artisan, Service, Réservation, Indisponibilité importée, Plan d’abonnement)
+* les règles d’intégrité (non chevauchement des créneaux, calcul de l’acompte, statuts de réservation)
+* les opérations exposées au front (consultation des services, disponibilités, création/annulation/replanification d’une réservation)
+
+Il sert de référence unique pour :
+
+* la conception de l’architecture backend (schéma de base de données, endpoints HTTP, gestion de la cohérence)
+* l’évolution de l’UI (formats de données, validations côté client)
+* la mise en place de tests automatisés sur le cycle de vie d’une réservation.
 
 ---
 
