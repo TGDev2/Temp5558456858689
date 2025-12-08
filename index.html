@@ -40,7 +40,7 @@
             <a class="nav-link active" aria-current="page" href="index.html"><i class="fas fa-home"></i> Accueil</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="about.html"><i class="fas fa-info-circle"></i> A propos</a>
+            <a class="nav-link" href="about.html"><i class="fas fa-info-circle"></i> À propos</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="services.html"><i class="fas fa-cogs"></i> Services</a>
@@ -64,10 +64,10 @@
       <div class="row align-items-center">
         <div class="col-lg-6">
           <h1>Simplifiez la gestion de vos rendez-vous clients</h1>
-          <p class="lead">La plateforme tout-en-un pour artisans et petites entreprises qui veulent gagner du temps et d�velopper leur activit�.</p>
+          <p class="lead">La plateforme tout-en-un pour artisans et petites entreprises qui veulent gagner du temps et développer leur activité.</p>
           <div class="d-flex flex-wrap gap-3 mb-4">
-            <a href="#booking" class="btn btn-light btn-lg">Ouvrir mes cr�neaux</a>
-            <a href="#features" class="btn btn-outline-light btn-lg">D�couvrir les fonctionnalit�s</a>
+            <a href="#booking" class="btn btn-light btn-lg">Ouvrir mes créneaux</a>
+            <a href="#features" class="btn btn-outline-light btn-lg">Découvrir les fonctionnalités</a>
           </div>
           <div class="d-flex flex-wrap gap-5">
             <div class="text-center">
@@ -76,7 +76,7 @@
             </div>
             <div class="text-center">
               <span class="d-block fw-bold fs-4">30%</span>
-              <span class="small">de temps gagn�</span>
+              <span class="small">de temps gagné</span>
             </div>
             <div class="text-center">
               <span class="d-block fw-bold fs-4">4.9/5</span>
@@ -104,7 +104,7 @@
               <div class="border rounded p-3 mb-2">
                 <div class="d-flex justify-content-between">
                   <span class="fw-bold">11:30</span>
-                  <span>Mme Martin - �lectricit�</span>
+                  <span>Mme Martin - Électricité</span>
                 </div>
               </div>
               <div class="border rounded p-3">
@@ -125,8 +125,8 @@
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
       <div>
         <p class="text-uppercase text-primary fw-bold small mb-1">Prise de rendez-vous en ligne</p>
-        <h2 class="mb-1">Cr�ez vos cr�neaux, encaissez un acompte, confirmez par email/SMS</h2>
-        <p class="text-muted mb-0">S�lection du service et de la dur�e, paiement d'acompte, confirmation imm�diate et lien de modification/annulation pour le client.</p>
+        <h2 class="mb-1">Créez vos créneaux, encaissez un acompte, confirmez par email/SMS</h2>
+        <p class="text-muted mb-0">Sélection du service et de la durée, paiement d'acompte, confirmation immédiate et lien de modification/annulation pour le client.</p>
       </div>
       <span class="badge bg-success align-self-start">Nouveau</span>
     </div>
@@ -136,48 +136,48 @@
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between mb-3">
               <div>
-                <div class="text-muted small">�tape 1</div>
-                <h4 class="mb-0">R�server un cr�neau</h4>
+                <div class="text-muted small">Étape 1</div>
+                <h4 class="mb-0">Réserver un créneau</h4>
               </div>
-              <span class="badge bg-primary-subtle text-primary fw-semibold">Acompte s�curis�</span>
+              <span class="badge bg-primary-subtle text-primary fw-semibold">Acompte sécurisé</span>
             </div>
             <form id="bookingForm" novalidate>
               <div class="row g-3 mb-3">
                 <div class="col-md-7">
-                  <label for="serviceSelect" class="form-label">Service et dur�e</label>
+                  <label for="serviceSelect" class="form-label">Service et durée</label>
                   <select class="form-select" id="serviceSelect" required aria-describedby="serviceDetails"></select>
-                  <div class="form-text" id="serviceDetails">Choisissez le service � planifier.</div>
+                  <div class="form-text" id="serviceDetails">Choisissez le service à planifier.</div>
                 </div>
                 <div class="col-md-5">
                   <div class="payment-summary h-100">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                      <span class="fw-semibold">Acompte estim�</span>
+                      <span class="fw-semibold">Acompte estimé</span>
                       <span class="badge bg-light text-dark" id="depositLabel">--</span>
                     </div>
                     <div class="h4 mb-0" id="depositAmount">--</div>
-                    <div class="text-muted small">Solde � r�gler sur place apr�s intervention.</div>
+                    <div class="text-muted small">Solde à régler sur place après intervention.</div>
                   </div>
                 </div>
               </div>
 
               <div class="row g-3 mb-3 align-items-end">
                 <div class="col-md-6">
-                  <label for="dateInput" class="form-label">Date souhait�e</label>
+                  <label for="dateInput" class="form-label">Date souhaitée</label>
                   <input type="date" class="form-control" id="dateInput" required>
                 </div>
                 <div class="col-md-6 text-md-end">
-                  <div class="text-muted small">Cr�neaux ouverts de 8h30 � 18h (pause 12h-13h).</div>
-                  <button type="button" class="btn btn-link p-0 small" id="refreshSlots">Actualiser les cr�neaux</button>
+                  <div class="text-muted small">Créneaux ouverts de 8h30 à 18h (pause 12h-13h).</div>
+                  <button type="button" class="btn btn-link p-0 small" id="refreshSlots">Actualiser les créneaux</button>
                 </div>
               </div>
 
               <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                  <label class="form-label mb-0">Cr�neaux disponibles</label>
-                  <span class="small text-muted" id="slotHint">S�lectionnez un cr�neau</span>
+                  <label class="form-label mb-0">Créneaux disponibles</label>
+                  <span class="small text-muted" id="slotHint">Sélectionnez un créneau</span>
                 </div>
                 <div id="slotList" class="slot-grid" aria-live="polite"></div>
-                <div class="invalid-feedback d-block" id="slotError" style="display:none;">Veuillez choisir un cr�neau libre.</div>
+                <div class="invalid-feedback d-block" id="slotError" style="display:none;">Veuillez choisir un créneau libre.</div>
               </div>
 
               <div class="row g-3 mb-3">
@@ -190,7 +190,7 @@
                   <input type="email" class="form-control" id="emailInput" required>
                 </div>
                 <div class="col-md-6">
-                  <label for="phoneInput" class="form-label">T�l�phone (SMS)</label>
+                  <label for="phoneInput" class="form-label">Téléphone (SMS)</label>
                   <input type="tel" class="form-control" id="phoneInput" placeholder="+33 6 12 34 56 78" required>
                 </div>
               </div>
@@ -204,7 +204,7 @@
                     </div>
                     <div class="row g-2">
                       <div class="col-7">
-                        <label for="cardNumber" class="form-label">Num�ro de carte</label>
+                        <label for="cardNumber" class="form-label">Numéro de carte</label>
                         <input type="text" class="form-control" id="cardNumber" inputmode="numeric" maxlength="19" placeholder="4242 4242 4242 4242" required>
                       </div>
                       <div class="col-3">
@@ -216,7 +216,7 @@
                         <input type="text" class="form-control" id="cardCvc" maxlength="4" required>
                       </div>
                     </div>
-                    <div class="form-text">Simulation de paiement s�curis� pour enregistrer l'acompte.</div>
+                    <div class="form-text">Simulation de paiement sécurisé pour enregistrer l'acompte.</div>
                   </div>
                 </div>
                 <div class="col-md-4">
@@ -230,15 +230,15 @@
                       <input class="form-check-input" type="checkbox" id="smsNotif" checked>
                       <label class="form-check-label" for="smsNotif">SMS de rappel</label>
                     </div>
-                    <p class="small text-muted mb-0">Lien de modification/annulation envoy� automatiquement.</p>
+                    <p class="small text-muted mb-0">Lien de modification/annulation envoyé automatiquement.</p>
                   </div>
                 </div>
               </div>
 
               <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
-                  <div class="fw-semibold">Total acompte � r�gler : <span id="depositAmountInline">--</span></div>
-                  <div class="text-muted small">Le cr�neau est bloqu� d�s confirmation et le client re�oit email + SMS.</div>
+                  <div class="fw-semibold">Total acompte à régler : <span id="depositAmountInline">--</span></div>
+                  <div class="text-muted small">Le créneau est bloqué dès confirmation et le client reçoit email + SMS.</div>
                 </div>
                 <button type="submit" class="btn btn-primary btn-lg">Confirmer et payer l'acompte</button>
               </div>
@@ -249,9 +249,9 @@
         <div class="alert alert-success d-none mt-3" id="bookingConfirmation" role="status" aria-live="polite">
           <div class="d-flex justify-content-between align-items-start">
             <div>
-              <h5 class="mb-1">R�servation confirm�e</h5>
+              <h5 class="mb-1">Réservation confirmée</h5>
               <p class="mb-2" id="confirmationDetails"></p>
-              <p class="mb-0 small text-muted">Un email et un SMS ont �t� envoy�s avec le lien de modification/annulation.</p>
+              <p class="mb-0 small text-muted">Un email et un SMS ont été envoyés avec le lien de modification/annulation.</p>
             </div>
             <span class="badge bg-success-subtle text-success">OK</span>
           </div>
@@ -262,17 +262,17 @@
         <div class="card shadow-sm mb-3">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <h5 class="mb-0">R�sum� en direct</h5>
+              <h5 class="mb-0">Résumé en direct</h5>
               <span class="badge bg-secondary-subtle text-secondary">Client</span>
             </div>
             <ul class="list-unstyled mb-0" id="liveSummary">
               <li class="d-flex justify-content-between mb-2"><span>Service</span><strong>--</strong></li>
-              <li class="d-flex justify-content-between mb-2"><span>Dur�e</span><strong>--</strong></li>
-              <li class="d-flex justify-content-between mb-2"><span>Cr�neau</span><strong>--</strong></li>
+              <li class="d-flex justify-content-between mb-2"><span>Durée</span><strong>--</strong></li>
+              <li class="d-flex justify-content-between mb-2"><span>Créneau</span><strong>--</strong></li>
               <li class="d-flex justify-content-between mb-2"><span>Acompte</span><strong>--</strong></li>
             </ul>
             <hr>
-            <p class="small text-muted mb-0">Les cr�neaux s'adaptent automatiquement selon la dur�e choisie. Annulation gratuite jusqu'� 24h avant.</p>
+            <p class="small text-muted mb-0">Les créneaux s'adaptent automatiquement selon la durée choisie. Annulation gratuite jusqu'à 24h avant.</p>
           </div>
         </div>
 
@@ -281,15 +281,15 @@
             <div class="d-flex justify-content-between align-items-center mb-2">
               <div>
                 <h5 class="mb-1">Synchronisation calendriers</h5>
-                <p class="small text-muted mb-0">Google, Outlook et Apple : blocage auto des indispos + push des rendez-vous confirmes.</p>
+                <p class="small text-muted mb-0">Google, Outlook et Apple : blocage auto des indispos + push des rendez-vous confirmés.</p>
               </div>
               <button class="btn btn-outline-primary btn-sm" id="syncCalendarsBtn"><i class="fas fa-rotate"></i> Sync</button>
             </div>
-            <div id="calendarSyncStatus" class="small text-muted mb-2">Aucun calendrier connecte pour l'instant.</div>
+            <div id="calendarSyncStatus" class="small text-muted mb-2">Aucun calendrier connecté pour l'instant.</div>
             <div id="calendarProviders" class="calendar-provider-list mb-3"></div>
             <div class="calendar-busy">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="fw-semibold">Indisponibilites importees</span>
+                <span class="fw-semibold">Indisponibilités importées</span>
                 <span class="badge bg-light text-dark" id="busyCountBadge">0</span>
               </div>
               <div id="calendarBusyList" class="busy-list small text-muted"></div>
@@ -300,7 +300,7 @@
         <div class="card shadow-sm">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h5 class="mb-0">Cr�neaux ouverts (7 prochains jours)</h5>
+              <h5 class="mb-0">Créneaux ouverts (7 prochains jours)</h5>
               <i class="fas fa-bolt text-warning"></i>
             </div>
             <div id="weeklySlots" class="weekly-slots"></div>
@@ -318,18 +318,18 @@
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
               <div>
-                <div class="text-muted small">�tape 2</div>
+                <div class="text-muted small">Étape 2</div>
                 <h4 class="mb-0">Modifier ou annuler</h4>
               </div>
               <span class="badge bg-info-subtle text-info">Self-service</span>
             </div>
             <form id="manageForm" novalidate>
               <div class="mb-3">
-                <label for="manageCode" class="form-label">Code de r�servation</label>
+                <label for="manageCode" class="form-label">Code de réservation</label>
                 <input type="text" class="form-control" id="manageCode" placeholder="AC-XXXXXX" required>
               </div>
               <div class="mb-3">
-                <label for="manageEmail" class="form-label">Email utilis�</label>
+                <label for="manageEmail" class="form-label">Email utilisé</label>
                 <input type="email" class="form-control" id="manageEmail" required>
               </div>
               <button type="submit" class="btn btn-outline-primary">Retrouver mon rendez-vous</button>
@@ -337,12 +337,12 @@
 
             <div class="mt-3 d-none" id="manageResult">
               <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="mb-0">D�tails du rendez-vous</h6>
+                <h6 class="mb-0">Détails du rendez-vous</h6>
                 <span class="badge" id="bookingStatusBadge">--</span>
               </div>
               <ul class="list-unstyled mb-3" id="bookingDetails"></ul>
               <div class="d-flex gap-2 flex-wrap">
-                <button class="btn btn-primary flex-grow-1" id="rescheduleBtn">Modifier le cr�neau</button>
+                <button class="btn btn-primary flex-grow-1" id="rescheduleBtn">Modifier le créneau</button>
                 <button class="btn btn-outline-danger flex-grow-1" id="cancelBtn">Annuler</button>
               </div>
             </div>
@@ -354,7 +354,7 @@
         <div class="card shadow-sm h-100">
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h5 class="mb-0">Nouveau cr�neau</h5>
+              <h5 class="mb-0">Nouveau créneau</h5>
               <i class="fas fa-clock text-primary"></i>
             </div>
             <div id="reschedulePanel" class="d-none">
@@ -364,17 +364,17 @@
                   <input type="date" class="form-control" id="rescheduleDate">
                 </div>
                 <div class="col-md-6">
-                  <div class="text-muted small">Cr�neaux adaptatifs selon la dur�e.</div>
+                  <div class="text-muted small">Créneaux adaptatifs selon la durée.</div>
                   <button type="button" class="btn btn-link p-0 small" id="refreshReschedule">Actualiser</button>
                 </div>
               </div>
               <div class="mb-3">
-                <label class="form-label">Choisir un cr�neau</label>
+                <label class="form-label">Choisir un créneau</label>
                 <div id="rescheduleSlots" class="slot-grid" aria-live="polite"></div>
               </div>
               <button class="btn btn-success" id="confirmReschedule">Valider la modification</button>
             </div>
-            <div id="reschedulePlaceholder" class="text-muted">S�lectionnez un rendez-vous pour ouvrir les options de modification.</div>
+            <div id="reschedulePlaceholder" class="text-muted">Sélectionnez un rendez-vous pour ouvrir les options de modification.</div>
           </div>
         </div>
       </div>
@@ -384,7 +384,7 @@
   <!-- Features Section -->
   <main class="container my-5" id="features">
     <section class="text-center mb-5">
-      <h2 class="mb-4">Des fonctionnalit�s con�ues pour les artisans</h2>
+      <h2 class="mb-4">Des fonctionnalités conçues pour les artisans</h2>
       <div class="row">
         <div class="col-md-3 mb-4">
           <i class="fas fa-calendar-alt display-4 mb-3 text-primary" aria-hidden="true"></i>
@@ -394,16 +394,16 @@
         <div class="col-md-3 mb-4">
           <i class="fas fa-bell display-4 mb-3 text-primary" aria-hidden="true"></i>
           <h4>Rappels automatiques</h4>
-          <p class="text-muted">Envoyez des SMS et emails de rappel pour r�duire les absences.</p>
+          <p class="text-muted">Envoyez des SMS et emails de rappel pour réduire les absences.</p>
         </div>
         <div class="col-md-3 mb-4">
           <i class="fas fa-credit-card display-4 mb-3 text-primary" aria-hidden="true"></i>
           <h4>Paiements en ligne</h4>
-          <p class="text-muted">Acceptez les r�servations avec acompte et paiements s�curis�s.</p>
+          <p class="text-muted">Acceptez les réservations avec acompte et paiements sécurisés.</p>
         </div>
         <div class="col-md-3 mb-4">
           <i class="fas fa-chart-line display-4 mb-3 text-primary" aria-hidden="true"></i>
-          <h4>Analytics avanc�s</h4>
+          <h4>Analytics avancés</h4>
           <p class="text-muted">Suivez vos performances et optimisez votre planning.</p>
         </div>
       </div>
@@ -411,7 +411,7 @@
 
     <!-- Pricing Section -->
     <section class="text-center">
-      <h2 class="mb-4">Des tarifs adapt�s � votre activit�</h2>
+      <h2 class="mb-4">Des tarifs adaptés à votre activité</h2>
       <div class="row">
         <div class="col-md-4 mb-4">
           <div class="card h-100">
@@ -432,10 +432,10 @@
             <div class="card-body">
               <span class="badge bg-primary position-absolute top-0 start-50 translate-middle">Populaire</span>
               <h3 class="card-title">Pro</h3>
-              <div class="display-4 fw-bold text-primary">29�<span class="fs-6 text-muted">/mois</span></div>
+              <div class="display-4 fw-bold text-primary">29€<span class="fs-6 text-muted">/mois</span></div>
               <ul class="list-unstyled my-4">
                 <li class="mb-2">3 artisans</li>
-                <li class="mb-2">Rendez-vous illimit�s</li>
+                <li class="mb-2">Rendez-vous illimités</li>
                 <li class="mb-2">Rappels SMS</li>
                 <li class="mb-2">Support prioritaire</li>
               </ul>
@@ -447,11 +447,11 @@
           <div class="card h-100">
             <div class="card-body">
               <h3 class="card-title">Business</h3>
-              <div class="display-4 fw-bold text-primary">79�<span class="fs-6 text-muted">/mois</span></div>
+              <div class="display-4 fw-bold text-primary">79€<span class="fs-6 text-muted">/mois</span></div>
               <ul class="list-unstyled my-4">
                 <li class="mb-2">10 artisans</li>
-                <li class="mb-2">Analytics avanc�s</li>
-                <li class="mb-2">Int�grations API</li>
+                <li class="mb-2">Analytics avancés</li>
+                <li class="mb-2">Intégrations API</li>
                 <li class="mb-2">Support 24/7</li>
               </ul>
               <a href="contact.html" class="btn btn-outline-primary w-100">Nous contacter</a>
@@ -476,7 +476,7 @@
         <div class="col-lg-3 mb-4">
           <h6>Produit</h6>
           <div class="d-flex flex-column">
-            <a href="#features" class="text-muted text-decoration-none mb-2">Fonctionnalit�s</a>
+            <a href="#features" class="text-muted text-decoration-none mb-2">Fonctionnalités</a>
             <a href="#booking" class="text-muted text-decoration-none mb-2">Tarifs</a>
             <a href="#" class="text-muted text-decoration-none mb-2">API</a>
           </div>
@@ -490,34 +490,27 @@
           </div>
         </div>
         <div class="col-lg-3 mb-4">
-          <h6>L�gal</h6>
+          <h6>Légal</h6>
           <div class="d-flex flex-column">
             <a href="#" class="text-muted text-decoration-none mb-2">CGV</a>
-            <a href="#" class="text-muted text-decoration-none mb-2">Confidentialit�</a>
-            <a href="#" class="text-muted text-decoration-none mb-2">Mentions l�gales</a>
+            <a href="#" class="text-muted text-decoration-none mb-2">Confidentialité</a>
+            <a href="#" class="text-muted text-decoration-none mb-2">Mentions légales</a>
           </div>
         </div>
       </div>
       <hr>
       <div class="text-center">
-        <p class="text-muted mb-0">� 2024 ArtisanConnect. Tous droits r�serv�s.</p>
+        <p class="text-muted mb-0">© 2024 ArtisanConnect. Tous droits réservés.</p>
       </div>
     </div>
   </footer>
 
   <!-- Bootstrap JS Bundle CDN -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Scripts personnalis�s -->
+  <!-- Scripts personnalisés -->
   <script src="js/form-validation.js"></script>
   <script src="js/back-to-top.js"></script>
   <script src="js/theme-toggle.js"></script>
   <script src="js/booking.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-

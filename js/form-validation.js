@@ -1,5 +1,3 @@
-// form-validation.js - Validation du formulaire en temps réel
-
 (function () {
   'use strict';
 
@@ -30,4 +28,3 @@
     }, false);
   }
 })();
-  

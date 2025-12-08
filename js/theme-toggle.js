@@ -1,5 +1,3 @@
-// theme-toggle.js - Permet de basculer entre le mode clair et le mode sombre
-
 (function() {
   'use strict';
 

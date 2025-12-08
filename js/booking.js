@@ -1,5 +1,4 @@
-﻿// booking.js - Gestion front de la prise de rendez-vous complète
-(function() {
+﻿(function() {
   'use strict';
 
   const bookingForm = document.getElementById('bookingForm');
@@ -66,11 +65,11 @@
     google: [
       { dayOffset: 1, start: '09:00', duration: 90, summary: 'Chantier Google' },
       { dayOffset: 2, start: '15:00', duration: 60, summary: 'Visio client' },
-      { dayOffset: 5, start: '10:30', duration: 120, summary: 'Livraison materiel' }
+      { dayOffset: 5, start: '10:30', duration: 120, summary: 'Livraison matériel' }
     ],
     outlook: [
       { dayOffset: 0, start: '14:00', duration: 60, summary: 'Rdv bureau' },
-      { dayOffset: 3, start: '08:30', duration: 60, summary: 'Planning equipe' },
+      { dayOffset: 3, start: '08:30', duration: 60, summary: 'Planning équipe' },
       { dayOffset: 7, start: '16:00', duration: 90, summary: 'Rappel maintenance' }
     ],
     apple: [
@@ -92,7 +91,7 @@
   let calendarState = null;
 
   const formatTwo = (val) => val.toString().padStart(2, '0');
-  const formatCurrency = (val) => `${val}€`;
+  const formatCurrency = (val) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
 
   const toISODate = (date) => {
     const y = date.getFullYear();
@@ -173,11 +172,11 @@
   const getProviderMeta = (id) => CALENDAR_PROVIDERS.find((p) => p.id === id) || { label: id, accent: '#94a3b8', icon: 'fas fa-calendar' };
 
   const formatLastSync = (iso) => {
-    if (!iso) return 'Jamais synchronise';
+    if (!iso) return 'Jamais synchronisé';
     try {
       return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
     } catch (error) {
-      return 'Jamais synchronise';
+      return 'Jamais synchronisé';
     }
   };
 
@@ -356,7 +355,7 @@
     depositAmountInline.textContent = `${formatCurrency(deposit)} (${percent}%)`;
     depositLabel.textContent = `${percent}%`;
     if (serviceDetails) {
-      serviceDetails.textContent = `Durée ${service.duration} min · ${service.price}€`;
+      serviceDetails.textContent = `Durée ${service.duration} min - ${service.price} €`;
     }
     updateLiveSummary();
   };
@@ -368,7 +367,7 @@
     const deposit = service ? computeDeposit(service) : null;
     if (values[0]) values[0].textContent = service ? service.name : '--';
     if (values[1]) values[1].textContent = service ? `${service.duration} min` : '--';
-    if (values[2]) values[2].textContent = selectedTime ? `${formatDateLabel(dateInput.value)} · ${selectedTime}` : '--';
+    if (values[2]) values[2].textContent = selectedTime ? `${formatDateLabel(dateInput.value)} - ${selectedTime}` : '--';
     if (values[3]) values[3].textContent = deposit ? formatCurrency(deposit) : '--';
   };
 
@@ -461,7 +460,7 @@
       calendarBusyCount.textContent = busyEvents.length.toString();
     }
     if (!busyEvents.length) {
-      calendarBusyList.innerHTML = '<div class="text-muted small">Aucune indisponibilite importee.</div>';
+      calendarBusyList.innerHTML = '<div class="text-muted small">Aucune indisponibilité importée.</div>';
       return;
     }
     calendarBusyList.innerHTML = '';
@@ -494,15 +493,15 @@
       (time) => {
         selectedTime = time;
         slotError.style.display = 'none';
-        slotError.textContent = 'Veuillez choisir un crOeau libre.';
+        slotError.textContent = 'Veuillez choisir un créneau libre.';
         updateLiveSummary();
       }
     );
     if (slotHint) {
       const available = slots.filter((s) => s.available).length;
       const busyCount = getCalendarBusyForDate(dateInput.value).length;
-      const extra = busyCount ? ` · ${busyCount} indispos importees` : '';
-      slotHint.textContent = available > 0 ? `${available} crOeaux ouverts${extra}` : 'Aucun crOeau libre ce jour';
+      const extra = busyCount ? ` · ${busyCount} indispos importées` : '';
+      slotHint.textContent = available > 0 ? `${available} créneaux ouverts${extra}` : 'Aucun créneau libre ce jour';
     }
     renderBusyListForDate(dateInput.value);
   };
@@ -514,12 +513,12 @@
       return provider && provider.connected;
     });
     if (!connected.length) {
-      calendarSyncStatus.textContent = 'Aucun calendrier connecte. Activez Google, Outlook ou Apple pour bloquer les indispos.';
+      calendarSyncStatus.textContent = 'Aucun calendrier connecté. Activez Google, Outlook ou Apple pour bloquer les indispos.';
       return;
     }
     const labels = connected.map((p) => p.label).join(' · ');
     const last = calendarState.lastFullSync ? `Dern. sync ${formatLastSync(calendarState.lastFullSync)}` : 'Sync en attente';
-    calendarSyncStatus.textContent = `${labels} connectes. ${last}.`;
+    calendarSyncStatus.textContent = `${labels} connectés. ${last}.`;
   };
 
   const connectProvider = (providerId) => {
@@ -568,7 +567,7 @@
           <span class="provider-dot" style="background:${provider.accent}"></span>
           <div>
             <div class="fw-semibold">${provider.label}</div>
-            <div class="small text-muted">${state.connected ? `Connecte · ${formatLastSync(state.lastSync)}` : 'Non connecte'}</div>
+            <div class="small text-muted">${state.connected ? `Connecté · ${formatLastSync(state.lastSync)}` : 'Non connecté'}</div>
           </div>
         </div>
         <div class="d-flex align-items-center gap-2">
@@ -704,7 +703,7 @@
   const renderBookingDetails = (booking) => {
     bookingDetails.innerHTML = `
       <li><strong>Service</strong> : ${booking.serviceName}</li>
-      <li><strong>Créneau</strong> : ${formatDateLabel(booking.date)} · ${booking.time}</li>
+      <li><strong>Créneau</strong> : ${formatDateLabel(booking.date)} - ${booking.time}</li>
       <li><strong>Acompte</strong> : ${formatCurrency(booking.deposit)} (${Math.round(booking.depositRate * 100)}%)</li>
       <li><strong>Notifications</strong> : ${joinNotifications(booking.notifications)}</li>
       <li><strong>Code</strong> : ${booking.code}</li>
@@ -862,7 +861,7 @@
   services.forEach((service) => {
     const option = document.createElement('option');
     option.value = service.id;
-    option.textContent = `${service.name} · ${service.duration} min · ${service.price}€`;
+    option.textContent = `${service.name} - ${service.duration} min - ${service.price} €`;
     serviceSelect.appendChild(option);
   });
 
@@ -877,7 +876,3 @@
   renderWeeklySlots();
   updateLiveSummary();
 })();
-
-
-
-

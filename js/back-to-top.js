@@ -1,5 +1,3 @@
-// back-to-top.js - Affiche un bouton pour revenir en haut de la page
-
 (function() {
     'use strict';
   
