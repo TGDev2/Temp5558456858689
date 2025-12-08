@@ -62,7 +62,9 @@
 
   const loadBookings = () => {
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
     } catch (error) {
       return [];
     }
@@ -157,6 +159,175 @@
     );
   };
 
+  // Couche métier : gestion centralisée du cycle de vie des réservations.
+  const createDomainError = (code, message) => {
+    const error = new Error(message);
+    error.code = code;
+    return error;
+  };
+
+  const normalizeCode = (code) =>
+    (code || '').toString().trim().toUpperCase();
+
+  const normalizeEmail = (email) =>
+    (email || '').toString().trim().toLowerCase();
+
+  const getAllBookings = () => loadBookings().slice();
+
+  const findBookingByCodeAndEmail = (code, email) => {
+    const targetCode = normalizeCode(code);
+    const targetEmail = normalizeEmail(email);
+    const bookings = loadBookings();
+
+    return (
+      bookings.find(
+        (booking) =>
+          normalizeCode(booking.code) === targetCode &&
+          normalizeEmail(booking.email) === targetEmail
+      ) || null
+    );
+  };
+
+  const createBooking = (input) => {
+    if (!input) {
+      throw createDomainError(
+        'INVALID_PAYLOAD',
+        'Données de réservation manquantes.'
+      );
+    }
+
+    const service = getServiceById(input.serviceId);
+    if (!service) {
+      throw createDomainError('UNKNOWN_SERVICE', 'Service inconnu.');
+    }
+
+    const date = input.date;
+    const time = input.time;
+
+    if (!date || !time) {
+      throw createDomainError('INVALID_SLOT', 'Créneau invalide.');
+    }
+
+    if (!isSlotAvailable(date, time, service.duration)) {
+      throw createDomainError(
+        'SLOT_UNAVAILABLE',
+        'Créneau déjà réservé ou indisponible.'
+      );
+    }
+
+    const nowIso = new Date().toISOString();
+    const bookings = loadBookings();
+
+    const booking = {
+      code: createCode(),
+      serviceId: service.id,
+      serviceName: service.name,
+      duration: service.duration,
+      price: service.price,
+      deposit: computeDeposit(service),
+      depositRate: service.depositRate,
+      date,
+      time,
+      name: (input.name || '').trim(),
+      email: normalizeEmail(input.email),
+      phone: (input.phone || '').trim(),
+      notifications: {
+        email:
+          input.notifications && typeof input.notifications.email === 'boolean'
+            ? input.notifications.email
+            : true,
+        sms:
+          input.notifications && typeof input.notifications.sms === 'boolean'
+            ? input.notifications.sms
+            : true
+      },
+      status: 'confirmed',
+      createdAt: nowIso,
+      updatedAt: nowIso
+    };
+
+    bookings.push(booking);
+    saveBookings(bookings);
+
+    return booking;
+  };
+
+  const cancelBooking = (code) => {
+    const normalizedCode = normalizeCode(code);
+    if (!normalizedCode) {
+      throw createDomainError('INVALID_CODE', 'Code de réservation invalide.');
+    }
+
+    const bookings = loadBookings();
+    const index = bookings.findIndex(
+      (booking) => normalizeCode(booking.code) === normalizedCode
+    );
+
+    if (index === -1) {
+      throw createDomainError('BOOKING_NOT_FOUND', 'Réservation introuvable.');
+    }
+
+    const booking = bookings[index];
+
+    if (booking.status === 'cancelled') {
+      return booking;
+    }
+
+    booking.status = 'cancelled';
+    booking.updatedAt = new Date().toISOString();
+    bookings[index] = booking;
+    saveBookings(bookings);
+
+    return booking;
+  };
+
+  const rescheduleBooking = (code, newDate, newTime) => {
+    const normalizedCode = normalizeCode(code);
+    if (!normalizedCode) {
+      throw createDomainError('INVALID_CODE', 'Code de réservation invalide.');
+    }
+
+    const bookings = loadBookings();
+    const index = bookings.findIndex(
+      (booking) => normalizeCode(booking.code) === normalizedCode
+    );
+
+    if (index === -1) {
+      throw createDomainError('BOOKING_NOT_FOUND', 'Réservation introuvable.');
+    }
+
+    const booking = bookings[index];
+    const targetDate = newDate || booking.date;
+    const targetTime = newTime || booking.time;
+
+    if (!targetDate || !targetTime) {
+      throw createDomainError('INVALID_SLOT', 'Créneau invalide.');
+    }
+
+    if (
+      !isSlotAvailable(
+        targetDate,
+        targetTime,
+        booking.duration,
+        booking.code
+      )
+    ) {
+      throw createDomainError(
+        'SLOT_UNAVAILABLE',
+        'Créneau déjà réservé ou indisponible.'
+      );
+    }
+
+    booking.date = targetDate;
+    booking.time = targetTime;
+    booking.status = 'rescheduled';
+    booking.updatedAt = new Date().toISOString();
+    bookings[index] = booking;
+    saveBookings(bookings);
+
+    return booking;
+  };
+
   window.ACBooking = {
     OPENING,
     SLOT_STEP,
@@ -173,6 +344,11 @@
     createCode,
     generateSlots,
     isSlotAvailable,
-    registerCalendarBusyProvider
+    registerCalendarBusyProvider,
+    getAllBookings,
+    findBookingByCodeAndEmail,
+    createBooking,
+    cancelBooking,
+    rescheduleBooking
   };
 })(window);

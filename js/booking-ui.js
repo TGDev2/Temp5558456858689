@@ -19,13 +19,13 @@
     formatDateLabel,
     minutesToTime,
     timeToMinutes,
-    loadBookings,
-    saveBookings,
     getServiceById,
     computeDeposit,
-    createCode,
     generateSlots,
-    isSlotAvailable
+    createBooking,
+    findBookingByCodeAndEmail,
+    cancelBooking,
+    rescheduleBooking
   } = ACBooking;
 
   const serviceSelect = document.getElementById('serviceSelect');
@@ -503,34 +503,32 @@
     }
 
     const date = dateInput.value;
-    if (!isSlotAvailable(date, selectedTime, service.duration)) {
-      slotError.textContent = 'Créneau déjà réservé, choisissez-en un autre.';
+
+    let booking;
+    try {
+      booking = createBooking({
+        serviceId: service.id,
+        date,
+        time: selectedTime,
+        name: nameInput.value.trim(),
+        email: emailInput.value.trim(),
+        phone: phoneInput.value.trim(),
+        notifications: { email: emailNotif.checked, sms: smsNotif.checked }
+      });
+    } catch (error) {
+      if (error && error.code === 'SLOT_UNAVAILABLE') {
+        slotError.textContent = 'Créneau déjà réservé, choisissez-en un autre.';
+        slotError.style.display = 'block';
+        renderSlotsForBooking();
+        return;
+      }
+
+      console.error('Erreur lors de la création de la réservation', error);
+      slotError.textContent =
+        'Impossible de valider ce créneau. Merci de réessayer ou de choisir un autre horaire.';
       slotError.style.display = 'block';
-      renderSlotsForBooking();
       return;
     }
-
-    const booking = {
-      code: createCode(),
-      serviceId: service.id,
-      serviceName: service.name,
-      duration: service.duration,
-      price: service.price,
-      deposit: computeDeposit(service),
-      depositRate: service.depositRate,
-      date,
-      time: selectedTime,
-      name: nameInput.value.trim(),
-      email: emailInput.value.trim(),
-      phone: phoneInput.value.trim(),
-      notifications: { email: emailNotif.checked, sms: smsNotif.checked },
-      status: 'confirmed',
-      createdAt: new Date().toISOString()
-    };
-
-    const bookings = loadBookings();
-    bookings.push(booking);
-    saveBookings(bookings);
 
     if (ACCalendarSync && typeof ACCalendarSync.pushBooking === 'function') {
       ACCalendarSync.pushBooking(booking);
@@ -582,12 +580,15 @@
 
   manageForm.addEventListener('submit', (event) => {
     event.preventDefault();
-    const code = manageCode.value.trim().toUpperCase();
-    const email = manageEmail.value.trim().toLowerCase();
-    const bookings = loadBookings();
-    const booking = bookings.find(
-      (b) => b.code === code && b.email.toLowerCase() === email
-    );
+    const code = manageCode.value.trim();
+    const email = manageEmail.value.trim();
+
+    let booking = null;
+    try {
+      booking = findBookingByCodeAndEmail(code, email);
+    } catch (error) {
+      console.error('Erreur lors de la recherche de réservation', error);
+    }
 
     if (!booking) {
       manageResult.classList.remove('d-none');
@@ -596,6 +597,8 @@
       bookingDetails.innerHTML =
         '<li class="text-danger">Aucune réservation trouvée.</li>';
       reschedulePanel.classList.add('d-none');
+      reschedulePlaceholder.classList.remove('d-none');
+      currentBooking = null;
       return;
     }
 
@@ -604,14 +607,19 @@
 
   cancelBtn.addEventListener('click', () => {
     if (!currentBooking) return;
-    const bookings = loadBookings();
-    const idx = bookings.findIndex((b) => b.code === currentBooking.code);
-    if (idx === -1) return;
 
-    bookings[idx].status = 'cancelled';
-    bookings[idx].updatedAt = new Date().toISOString();
-    currentBooking = bookings[idx];
-    saveBookings(bookings);
+    let updated;
+    try {
+      updated = cancelBooking(currentBooking.code);
+    } catch (error) {
+      console.error('Erreur lors de l’annulation de la réservation', error);
+      notify(
+        'Impossible d’annuler ce rendez-vous pour le moment. Merci de réessayer.'
+      );
+      return;
+    }
+
+    currentBooking = updated;
 
     if (ACCalendarSync && typeof ACCalendarSync.removeBooking === 'function') {
       ACCalendarSync.removeBooking(currentBooking);
@@ -671,29 +679,27 @@
       return;
     }
 
-    if (
-      !isSlotAvailable(
+    let updated;
+    try {
+      updated = rescheduleBooking(
+        currentBooking.code,
         newDate,
-        selectedRescheduleTime,
-        currentBooking.duration,
-        currentBooking.code
-      )
-    ) {
-      renderRescheduleWarning('Créneau indisponible.');
-      renderReschedule();
+        selectedRescheduleTime
+      );
+    } catch (error) {
+      if (error && error.code === 'SLOT_UNAVAILABLE') {
+        renderRescheduleWarning('Créneau indisponible.');
+        renderReschedule();
+        return;
+      }
+      console.error('Erreur lors du changement de créneau', error);
+      renderRescheduleWarning(
+        'Impossible de modifier ce rendez-vous pour le moment.'
+      );
       return;
     }
 
-    const bookings = loadBookings();
-    const idx = bookings.findIndex((b) => b.code === currentBooking.code);
-    if (idx === -1) return;
-
-    bookings[idx].date = newDate;
-    bookings[idx].time = selectedRescheduleTime;
-    bookings[idx].status = 'rescheduled';
-    bookings[idx].updatedAt = new Date().toISOString();
-    currentBooking = bookings[idx];
-    saveBookings(bookings);
+    currentBooking = updated;
 
     if (ACCalendarSync) {
       if (typeof ACCalendarSync.removeBooking === 'function') {
