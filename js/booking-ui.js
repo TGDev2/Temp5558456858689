@@ -1,8 +1,32 @@
-﻿(function() {
+(function(window) {
   'use strict';
 
   const bookingForm = document.getElementById('bookingForm');
   if (!bookingForm) return;
+
+  const ACBooking = window.ACBooking;
+  if (!ACBooking) {
+    console.error('ACBooking non initialisé');
+    return;
+  }
+
+  const ACCalendarSync = window.ACCalendarSync || null;
+
+  const {
+    services,
+    formatCurrency,
+    toISODate,
+    formatDateLabel,
+    minutesToTime,
+    timeToMinutes,
+    loadBookings,
+    saveBookings,
+    getServiceById,
+    computeDeposit,
+    createCode,
+    generateSlots,
+    isSlotAvailable
+  } = ACBooking;
 
   const serviceSelect = document.getElementById('serviceSelect');
   const serviceDetails = document.getElementById('serviceDetails');
@@ -52,290 +76,9 @@
   const calendarSyncStatus = document.getElementById('calendarSyncStatus');
   const syncCalendarsBtn = document.getElementById('syncCalendarsBtn');
 
-  const STORAGE_KEY = 'ac-bookings';
-  const OPENING = { start: 8 * 60 + 30, end: 18 * 60, breakStart: 12 * 60, breakEnd: 13 * 60 };
-  const SLOT_STEP = 30; // minutes
-  const CALENDAR_STORAGE_KEY = 'ac-calendar-sync';
-  const CALENDAR_PROVIDERS = [
-    { id: 'google', label: 'Google Calendar', accent: '#ea4335', icon: 'fab fa-google' },
-    { id: 'outlook', label: 'Outlook / Office 365', accent: '#0a64ad', icon: 'fab fa-microsoft' },
-    { id: 'apple', label: 'Apple Calendar', accent: '#111827', icon: 'fab fa-apple' }
-  ];
-  const SAMPLE_BUSY = {
-    google: [
-      { dayOffset: 1, start: '09:00', duration: 90, summary: 'Chantier Google' },
-      { dayOffset: 2, start: '15:00', duration: 60, summary: 'Visio client' },
-      { dayOffset: 5, start: '10:30', duration: 120, summary: 'Livraison matériel' }
-    ],
-    outlook: [
-      { dayOffset: 0, start: '14:00', duration: 60, summary: 'Rdv bureau' },
-      { dayOffset: 3, start: '08:30', duration: 60, summary: 'Planning équipe' },
-      { dayOffset: 7, start: '16:00', duration: 90, summary: 'Rappel maintenance' }
-    ],
-    apple: [
-      { dayOffset: 1, start: '07:30', duration: 60, summary: 'Bloc perso' },
-      { dayOffset: 4, start: '13:00', duration: 120, summary: 'Livraison atelier' }
-    ]
-  };
-
-  const services = [
-    { id: 'diag', name: 'Diagnostic et audit', duration: 30, price: 40, depositRate: 0.3 },
-    { id: 'urgence', name: 'Intervention urgente', duration: 45, price: 120, depositRate: 0.4 },
-    { id: 'maintenance', name: 'Maintenance planifiée', duration: 60, price: 80, depositRate: 0.3 },
-    { id: 'installation', name: 'Installation / mise en service', duration: 90, price: 160, depositRate: 0.35 }
-  ];
-
   let selectedTime = null;
   let selectedRescheduleTime = null;
   let currentBooking = null;
-  let calendarState = null;
-
-  const formatTwo = (val) => val.toString().padStart(2, '0');
-  const formatCurrency = (val) =>
-    new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR',
-      maximumFractionDigits: 0
-    }).format(val);
-
-  const toISODate = (date) => {
-    const y = date.getFullYear();
-    const m = formatTwo(date.getMonth() + 1);
-    const d = formatTwo(date.getDate());
-    return `${y}-${m}-${d}`;
-  };
-
-  const formatDateLabel = (dateStr) => {
-    try {
-      const date = new Date(`${dateStr}T00:00:00`);
-      return new Intl.DateTimeFormat('fr-FR', {
-        weekday: 'short',
-        day: '2-digit',
-        month: 'short'
-      }).format(date);
-    } catch (error) {
-      return dateStr;
-    }
-  };
-
-  const minutesToTime = (minutes) =>
-    `${formatTwo(Math.floor(minutes / 60))}:${formatTwo(minutes % 60)}`;
-
-  const timeToMinutes = (timeStr) => {
-    const [h, m] = timeStr.split(':').map(Number);
-    return h * 60 + m;
-  };
-
-  const loadBookings = () => {
-    try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    } catch (error) {
-      return [];
-    }
-  };
-
-  const saveBookings = (bookings) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings));
-    } catch (error) {
-      // stockage best-effort
-    }
-  };
-
-  const defaultCalendarState = () =>
-    ({
-      providers: CALENDAR_PROVIDERS.reduce((acc, provider) => {
-        acc[provider.id] = {
-          connected: false,
-          busy: [],
-          lastSync: null,
-          autoPush: true,
-          autoPull: true
-        };
-        return acc;
-      }, {}),
-      lastFullSync: null
-    });
-
-  const loadCalendarState = () => {
-    try {
-      const raw = JSON.parse(localStorage.getItem(CALENDAR_STORAGE_KEY));
-      const base = defaultCalendarState();
-      if (!raw) return base;
-      const merged = {
-        ...base,
-        ...raw,
-        providers: { ...base.providers, ...(raw.providers || {}) }
-      };
-      CALENDAR_PROVIDERS.forEach((provider) => {
-        merged.providers[provider.id] = {
-          ...base.providers[provider.id],
-          ...(merged.providers[provider.id] || {})
-        };
-      });
-      return merged;
-    } catch (error) {
-      return defaultCalendarState();
-    }
-  };
-
-  const saveCalendarState = (state) => {
-    try {
-      localStorage.setItem(CALENDAR_STORAGE_KEY, JSON.stringify(state));
-    } catch (error) {
-      // stockage best-effort
-    }
-  };
-
-  const getProviderMeta = (id) =>
-    CALENDAR_PROVIDERS.find((p) => p.id === id) || {
-      label: id,
-      accent: '#94a3b8',
-      icon: 'fas fa-calendar'
-    };
-
-  const formatLastSync = (iso) => {
-    if (!iso) return 'Jamais synchronisé';
-    try {
-      return new Intl.DateTimeFormat('fr-FR', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit'
-      }).format(new Date(iso));
-    } catch (error) {
-      return 'Jamais synchronisé';
-    }
-  };
-
-  const buildBusyFromTemplate = (providerId, template, index) => {
-    const base = new Date();
-    const day = new Date(base);
-    day.setDate(base.getDate() + template.dayOffset);
-    const startTime = template.start || '09:00';
-    const endTime = minutesToTime(timeToMinutes(startTime) + (template.duration || 60));
-    const dateStr = toISODate(day);
-    return {
-      id: `${providerId}-ext-${index}`,
-      start: `${dateStr}T${startTime}:00`,
-      end: `${dateStr}T${endTime}:00`,
-      summary: template.summary || 'Indispo externe',
-      source: providerId,
-      providerId,
-      origin: 'external'
-    };
-  };
-
-  calendarState = loadCalendarState();
-
-  const refreshProviderBusy = (providerId) => {
-    const providerState = calendarState.providers[providerId];
-    if (!providerState) return;
-    const templates = SAMPLE_BUSY[providerId] || [];
-    const imported = templates.map((tpl, idx) =>
-      buildBusyFromTemplate(providerId, tpl, idx)
-    );
-    providerState.connected = true;
-    providerState.busy = [
-      ...providerState.busy.filter((evt) => evt.origin === 'booking'),
-      ...imported
-    ];
-    providerState.lastSync = new Date().toISOString();
-    calendarState.lastFullSync = providerState.lastSync;
-    saveCalendarState(calendarState);
-  };
-
-  const pushBookingToProviders = (booking) => {
-    // Par sécurité, on ne pousse jamais une réservation annulée dans les calendriers.
-    if (!booking || booking.status === 'cancelled') {
-      return;
-    }
-
-    CALENDAR_PROVIDERS.forEach(({ id }) => {
-      const providerState = calendarState.providers[id];
-      if (!providerState || !providerState.connected || providerState.autoPush === false) {
-        return;
-      }
-
-      providerState.busy = providerState.busy.filter(
-        (evt) => evt.bookingCode !== booking.code
-      );
-
-      const endTime = minutesToTime(timeToMinutes(booking.time) + booking.duration);
-      providerState.busy.push({
-        id: `${booking.code}-${id}`,
-        bookingCode: booking.code,
-        start: `${booking.date}T${booking.time}:00`,
-        end: `${booking.date}T${endTime}:00`,
-        summary: `${booking.serviceName} - ${booking.name}`,
-        source: id,
-        providerId: id,
-        origin: 'booking'
-      });
-      providerState.lastSync = new Date().toISOString();
-      calendarState.lastFullSync = providerState.lastSync;
-    });
-
-    saveCalendarState(calendarState);
-  };
-
-  const removeBookingFromProviders = (booking) => {
-    CALENDAR_PROVIDERS.forEach(({ id }) => {
-      const providerState = calendarState.providers[id];
-      if (!providerState) return;
-      providerState.busy = providerState.busy.filter(
-        (evt) => evt.bookingCode !== booking.code
-      );
-      if (providerState.connected) {
-        providerState.lastSync = new Date().toISOString();
-        calendarState.lastFullSync = providerState.lastSync;
-      }
-    });
-    saveCalendarState(calendarState);
-  };
-
-  const pushExistingBookings = () => {
-    const bookings = loadBookings().filter((b) => b.status !== 'cancelled');
-    bookings.forEach((booking) => pushBookingToProviders(booking));
-  };
-
-  const getCalendarBusyForDate = (dateStr, ignoreCode) => {
-    const busy = [];
-    const dayStart = new Date(`${dateStr}T00:00:00`);
-    const dayEnd = new Date(`${dateStr}T23:59:59`);
-    Object.entries(calendarState.providers || {}).forEach(
-      ([providerId, providerState]) => {
-        if (
-          !providerState ||
-          !providerState.connected ||
-          providerState.autoPull === false
-        ) {
-          return;
-        }
-        providerState.busy.forEach((evt) => {
-          if (ignoreCode && evt.bookingCode === ignoreCode) return;
-          const start = new Date(evt.start);
-          const end = new Date(evt.end);
-          if (isNaN(start) || isNaN(end)) return;
-          if (end < dayStart || start > dayEnd) return;
-          busy.push({
-            start: Math.max(0, start.getHours() * 60 + start.getMinutes()),
-            end: Math.min(24 * 60, end.getHours() * 60 + end.getMinutes()),
-            source: evt.source || providerId,
-            providerId,
-            summary: evt.summary || 'Indispo externe',
-            bookingCode: evt.bookingCode || null,
-            origin: evt.origin || 'external'
-          });
-        });
-      }
-    );
-    return busy;
-  };
-
-  const getServiceById = (id) => services.find((s) => s.id === id);
-
-  const computeDeposit = (service) => Math.round(service.price * service.depositRate);
 
   const statusLabel = (status) => {
     if (status === 'cancelled') return 'Annulé';
@@ -363,51 +106,6 @@
     if (!input.value) input.value = iso;
   };
 
-  const getBusyWindows = (dateStr, ignoreCode) => {
-    const bookingBusy = loadBookings()
-      .filter(
-        (b) => b.date === dateStr && b.status !== 'cancelled' && b.code !== ignoreCode
-      )
-      .map((b) => ({
-        start: timeToMinutes(b.time),
-        end: timeToMinutes(b.time) + b.duration,
-        source: 'booking',
-        providerId: 'artisan',
-        summary: b.serviceName,
-        bookingCode: b.code,
-        origin: 'booking'
-      }));
-    const calendarBusy = getCalendarBusyForDate(dateStr, ignoreCode);
-    return [...bookingBusy, ...calendarBusy];
-  };
-
-  const generateSlots = (dateStr, duration, ignoreCode) => {
-    if (!dateStr || !duration) return [];
-    const busyWindows = getBusyWindows(dateStr, ignoreCode);
-    const slots = [];
-    for (
-      let minutes = OPENING.start;
-      minutes + duration <= OPENING.end;
-      minutes += SLOT_STEP
-    ) {
-      if (minutes >= OPENING.breakStart && minutes < OPENING.breakEnd) continue;
-      const start = minutes;
-      const end = minutes + duration;
-      const blockers = busyWindows.filter((b) => start < b.end && end > b.start);
-      slots.push({
-        time: minutesToTime(minutes),
-        available: !blockers.length,
-        blockedBy: blockers
-      });
-    }
-    return slots;
-  };
-
-  const isSlotAvailable = (dateStr, timeStr, duration, ignoreCode) => {
-    const slots = generateSlots(dateStr, duration, ignoreCode);
-    return slots.some((slot) => slot.time === timeStr && slot.available);
-  };
-
   const updateServiceDisplay = () => {
     const service = getServiceById(serviceSelect.value);
     if (!service) return;
@@ -427,6 +125,7 @@
     const service = getServiceById(serviceSelect.value);
     const values = liveSummary.querySelectorAll('strong');
     const deposit = service ? computeDeposit(service) : null;
+
     if (values[0]) values[0].textContent = service ? service.name : '--';
     if (values[1]) values[1].textContent = service ? `${service.duration} min` : '--';
     if (values[2]) {
@@ -449,35 +148,46 @@
   ) => {
     if (!container) return [];
     container.innerHTML = '';
+
     const slots = generateSlots(dateStr, duration, ignoreCode);
     if (!slots.length) {
       container.innerHTML =
         '<span class="text-muted small">Aucun créneau ouvert pour cette date.</span>';
       return slots;
     }
+
     slots.forEach((slot) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.textContent = slot.time;
       btn.className = 'slot-button';
+
       if (!slot.available) {
         btn.classList.add('disabled');
         btn.disabled = true;
         if (slot.blockedBy && slot.blockedBy.length) {
-          const sources = [
-            ...new Set(
-              slot.blockedBy.map(
-                (b) =>
-                  getProviderMeta(b.providerId || b.source).label || b.source
-              )
-            )
-          ];
+          const sources = [...new Set(
+            slot.blockedBy.map((b) => {
+              if (
+                ACCalendarSync &&
+                typeof ACCalendarSync.getProviderMeta === 'function'
+              ) {
+                return (
+                  ACCalendarSync.getProviderMeta(b.providerId || b.source).label ||
+                  b.source
+                );
+              }
+              return b.providerId || b.source || 'indisponible';
+            })
+          )];
           btn.title = `Indisponible (${sources.join(' / ')})`;
         }
       }
+
       if (slot.time === selectedValue) {
         btn.classList.add('selected');
       }
+
       btn.addEventListener('click', () => {
         if (typeof onSelect === 'function') onSelect(slot.time);
         container
@@ -485,9 +195,58 @@
           .forEach((b) => b.classList.remove('selected'));
         btn.classList.add('selected');
       });
+
       container.appendChild(btn);
     });
+
     return slots;
+  };
+
+  const renderBusyListForDate = (dateStr) => {
+    if (!calendarBusyList) return;
+
+    if (!ACCalendarSync) {
+      calendarBusyList.innerHTML =
+        '<div class="text-muted small">Synchronisation calendrier non activée.</div>';
+      if (calendarBusyCount) {
+        calendarBusyCount.textContent = '0';
+      }
+      return;
+    }
+
+    const busyEvents = ACCalendarSync
+      .getBusyForDate(dateStr)
+      .slice()
+      .sort((a, b) => a.start - b.start);
+
+    if (calendarBusyCount) {
+      calendarBusyCount.textContent = busyEvents.length.toString();
+    }
+
+    if (!busyEvents.length) {
+      calendarBusyList.innerHTML =
+        '<div class="text-muted small">Aucune indisponibilité importée.</div>';
+      return;
+    }
+
+    calendarBusyList.innerHTML = '';
+    busyEvents.forEach((evt) => {
+      const meta = ACCalendarSync.getProviderMeta(evt.providerId || evt.source);
+      const row = document.createElement('div');
+      row.className = 'busy-pill';
+      row.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start gap-2">
+          <div>
+            <div class="fw-semibold">${evt.summary}</div>
+            <div class="small text-muted">
+              <span class="busy-time">${minutesToTime(evt.start)} - ${minutesToTime(evt.end)}</span> · ${meta.label}
+            </div>
+          </div>
+          <span class="provider-dot" style="background:${meta.accent}"></span>
+        </div>
+      `;
+      calendarBusyList.appendChild(row);
+    });
   };
 
   const renderWeeklySlots = () => {
@@ -534,46 +293,130 @@
           });
         }
       }
+
       weeklySlots.appendChild(card);
     }
   };
 
-  const renderBusyListForDate = (dateStr) => {
-    if (!calendarBusyList) return;
-    const busyEvents = getCalendarBusyForDate(dateStr).sort(
-      (a, b) => a.start - b.start
-    );
-    if (calendarBusyCount) {
-      calendarBusyCount.textContent = busyEvents.length.toString();
-    }
-    if (!busyEvents.length) {
-      calendarBusyList.innerHTML =
-        '<div class="text-muted small">Aucune indisponibilité importée.</div>';
+  const updateCalendarSyncStatus = () => {
+    if (!calendarSyncStatus) return;
+
+    if (!ACCalendarSync) {
+      calendarSyncStatus.textContent =
+        'Synchronisation calendrier non disponible.';
       return;
     }
-    calendarBusyList.innerHTML = '';
-    busyEvents.forEach((evt) => {
-      const meta = getProviderMeta(evt.providerId || evt.source);
+
+    const state = ACCalendarSync.getState();
+    const providers = ACCalendarSync.CALENDAR_PROVIDERS || [];
+    const connected = providers.filter(({ id }) => {
+      const provider = state.providers && state.providers[id];
+      return provider && provider.connected;
+    });
+
+    if (!connected.length) {
+      calendarSyncStatus.textContent =
+        'Aucun calendrier connecté. Activez Google, Outlook ou Apple pour bloquer les indispos.';
+      return;
+    }
+
+    const labels = connected.map((p) => p.label).join(' · ');
+    const last = state.lastFullSync
+      ? `Dern. sync ${ACCalendarSync.formatLastSync(state.lastFullSync)}`
+      : 'Sync en attente';
+    calendarSyncStatus.textContent = `${labels} connectés. ${last}.`;
+  };
+
+  const renderCalendarSyncUI = () => {
+    if (!calendarProvidersContainer) return;
+
+    if (!ACCalendarSync) {
+      calendarProvidersContainer.innerHTML =
+        '<div class="small text-muted">Synchronisation calendrier non disponible.</div>';
+      updateCalendarSyncStatus();
+      return;
+    }
+
+    const state = ACCalendarSync.getState();
+    const providers = ACCalendarSync.CALENDAR_PROVIDERS || [];
+
+    calendarProvidersContainer.innerHTML = '';
+
+    providers.forEach((provider) => {
+      const providerState = state.providers[provider.id] || {
+        connected: false,
+        lastSync: null
+      };
+
       const row = document.createElement('div');
-      row.className = 'busy-pill';
+      row.className = 'calendar-provider';
       row.innerHTML = `
-        <div class="d-flex justify-content-between align-items-start gap-2">
+        <div class="d-flex align-items-center gap-2">
+          <span class="provider-dot" style="background:${provider.accent}"></span>
           <div>
-            <div class="fw-semibold">${evt.summary}</div>
-            <div class="small text-muted"><span class="busy-time">${minutesToTime(
-              evt.start
-            )} - ${minutesToTime(evt.end)}</span> · ${meta.label}</div>
+            <div class="fw-semibold">${provider.label}</div>
+            <div class="small text-muted">${
+              providerState.connected
+                ? `Connecté · ${ACCalendarSync.formatLastSync(providerState.lastSync)}`
+                : 'Non connecté'
+            }</div>
           </div>
-          <span class="provider-dot" style="background:${meta.accent}"></span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <div class="form-check form-switch mb-0">
+            <input class="form-check-input provider-toggle" type="checkbox" role="switch"
+              data-provider="${provider.id}" ${providerState.connected ? 'checked' : ''}
+              aria-label="Activer ${provider.label}">
+          </div>
+          <button class="btn btn-light btn-sm provider-resync" data-provider="${provider.id}"
+            title="Resynchroniser ${provider.label}">
+            <i class="fas fa-rotate"></i>
+          </button>
         </div>
       `;
-      calendarBusyList.appendChild(row);
+
+      calendarProvidersContainer.appendChild(row);
     });
+
+    calendarProvidersContainer
+      .querySelectorAll('.provider-toggle')
+      .forEach((input) => {
+        input.addEventListener('change', (event) => {
+          const id = event.target.getAttribute('data-provider');
+          if (!ACCalendarSync) return;
+          if (event.target.checked) {
+            ACCalendarSync.connectProvider(id);
+          } else {
+            ACCalendarSync.disconnectProvider(id);
+          }
+          renderCalendarSyncUI();
+          renderSlotsForBooking();
+          renderWeeklySlots();
+          renderBusyListForDate(dateInput.value);
+        });
+      });
+
+    calendarProvidersContainer
+      .querySelectorAll('.provider-resync')
+      .forEach((btn) => {
+        btn.addEventListener('click', () => {
+          if (!ACCalendarSync) return;
+          const id = btn.getAttribute('data-provider');
+          ACCalendarSync.connectProvider(id);
+          renderCalendarSyncUI();
+          renderSlotsForBooking();
+          renderBusyListForDate(dateInput.value);
+          renderWeeklySlots();
+        });
+      });
+
+    updateCalendarSyncStatus();
   };
 
   const renderSlotsForBooking = () => {
     const service = getServiceById(serviceSelect.value);
     if (!service) return;
+
     const slots = renderSlots(
       slotList,
       dateInput.value,
@@ -587,126 +430,20 @@
         updateLiveSummary();
       }
     );
+
     if (slotHint) {
       const available = slots.filter((s) => s.available).length;
-      const busyCount = getCalendarBusyForDate(dateInput.value).length;
+      const busyCount =
+        ACCalendarSync && typeof ACCalendarSync.getBusyForDate === 'function'
+          ? ACCalendarSync.getBusyForDate(dateInput.value).length
+          : 0;
       const extra = busyCount ? ` · ${busyCount} indispos importées` : '';
       slotHint.textContent = available
         ? `${available} créneaux ouverts${extra}`
         : 'Aucun créneau libre ce jour';
     }
+
     renderBusyListForDate(dateInput.value);
-  };
-
-  const updateCalendarSyncStatus = () => {
-    if (!calendarSyncStatus) return;
-    const connected = CALENDAR_PROVIDERS.filter(({ id }) => {
-      const provider = calendarState.providers[id];
-      return provider && provider.connected;
-    });
-    if (!connected.length) {
-      calendarSyncStatus.textContent =
-        'Aucun calendrier connecté. Activez Google, Outlook ou Apple pour bloquer les indispos.';
-      return;
-    }
-    const labels = connected.map((p) => p.label).join(' · ');
-    const last = calendarState.lastFullSync
-      ? `Dern. sync ${formatLastSync(calendarState.lastFullSync)}`
-      : 'Sync en attente';
-    calendarSyncStatus.textContent = `${labels} connectés. ${last}.`;
-  };
-
-  const connectProvider = (providerId) => {
-    refreshProviderBusy(providerId);
-    pushExistingBookings();
-    renderCalendarSyncUI();
-    renderSlotsForBooking();
-    renderWeeklySlots();
-    renderBusyListForDate(dateInput.value);
-  };
-
-  const disconnectProvider = (providerId) => {
-    const provider = calendarState.providers[providerId];
-    if (!provider) return;
-    provider.connected = false;
-    saveCalendarState(calendarState);
-    renderCalendarSyncUI();
-    renderSlotsForBooking();
-    renderWeeklySlots();
-    renderBusyListForDate(dateInput.value);
-  };
-
-  const syncAllProviders = () => {
-    CALENDAR_PROVIDERS.forEach(({ id }) => {
-      const provider = calendarState.providers[id];
-      if (provider && provider.connected) {
-        refreshProviderBusy(id);
-      }
-    });
-    pushExistingBookings();
-    renderCalendarSyncUI();
-    renderSlotsForBooking();
-    renderWeeklySlots();
-    renderBusyListForDate(dateInput.value);
-  };
-
-  const renderCalendarSyncUI = () => {
-    if (!calendarProvidersContainer) return;
-    calendarProvidersContainer.innerHTML = '';
-    CALENDAR_PROVIDERS.forEach((provider) => {
-      const state = calendarState.providers[provider.id];
-      const row = document.createElement('div');
-      row.className = 'calendar-provider';
-      row.innerHTML = `
-        <div class="d-flex align-items-center gap-2">
-          <span class="provider-dot" style="background:${provider.accent}"></span>
-          <div>
-            <div class="fw-semibold">${provider.label}</div>
-            <div class="small text-muted">${
-              state.connected
-                ? `Connecté · ${formatLastSync(state.lastSync)}`
-                : 'Non connecté'
-            }</div>
-          </div>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-          <div class="form-check form-switch mb-0">
-            <input class="form-check-input provider-toggle" type="checkbox" role="switch" data-provider="${
-              provider.id
-            }" ${state.connected ? 'checked' : ''} aria-label="Activer ${
-        provider.label
-      }">
-          </div>
-          <button class="btn btn-light btn-sm provider-resync" data-provider="${
-            provider.id
-          }" title="Resynchroniser ${provider.label}"><i class="fas fa-rotate"></i></button>
-        </div>
-      `;
-      calendarProvidersContainer.appendChild(row);
-    });
-    calendarProvidersContainer
-      .querySelectorAll('.provider-toggle')
-      .forEach((input) => {
-        input.addEventListener('change', (event) => {
-          const id = event.target.getAttribute('data-provider');
-          if (event.target.checked) {
-            connectProvider(id);
-          } else {
-            disconnectProvider(id);
-          }
-        });
-      });
-    calendarProvidersContainer.querySelectorAll('.provider-resync').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-provider');
-        connectProvider(id);
-        refreshProviderBusy(id);
-        renderSlotsForBooking();
-        renderBusyListForDate(dateInput.value);
-        renderWeeklySlots();
-      });
-    });
-    updateCalendarSyncStatus();
   };
 
   const resetFormState = () => {
@@ -728,17 +465,17 @@
     const number = cardNumber.value.replace(/\s+/g, '');
     const expiry = cardExpiry.value.trim();
     const cvc = cardCvc.value.trim();
+
     const numberOk = number.length >= 12;
     const expiryOk = /^\d{2}\/?\d{2}$/.test(expiry);
     const cvcOk = cvc.length >= 3;
+
     cardNumber.classList.toggle('is-invalid', !numberOk);
     cardExpiry.classList.toggle('is-invalid', !expiryOk);
     cardCvc.classList.toggle('is-invalid', !cvcOk);
+
     return numberOk && expiryOk && cvcOk;
   };
-
-  const createCode = () =>
-    `AC-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
   const joinNotifications = (notif) => {
     const parts = [];
@@ -747,7 +484,6 @@
     return parts.length ? parts.join(' + ') : 'Aucune';
   };
 
-  // Booking submission
   bookingForm.addEventListener('submit', (event) => {
     event.preventDefault();
     const service = getServiceById(serviceSelect.value);
@@ -795,7 +531,10 @@
     const bookings = loadBookings();
     bookings.push(booking);
     saveBookings(bookings);
-    pushBookingToProviders(booking);
+
+    if (ACCalendarSync && typeof ACCalendarSync.pushBooking === 'function') {
+      ACCalendarSync.pushBooking(booking);
+    }
 
     notify(
       `${booking.name} - ${booking.serviceName} le ${formatDateLabel(
@@ -811,7 +550,6 @@
     renderWeeklySlots();
   });
 
-  // Manage section
   const renderBookingDetails = (booking) => {
     bookingDetails.innerHTML = `
       <li><strong>Service</strong> : ${booking.serviceName}</li>
@@ -875,9 +613,9 @@
     currentBooking = bookings[idx];
     saveBookings(bookings);
 
-    // On supprime la réservation des calendriers connectés sans la republier,
-    // afin de libérer réellement le créneau.
-    removeBookingFromProviders(currentBooking);
+    if (ACCalendarSync && typeof ACCalendarSync.removeBooking === 'function') {
+      ACCalendarSync.removeBooking(currentBooking);
+    }
 
     showBooking(currentBooking);
     notify(
@@ -956,8 +694,16 @@
     bookings[idx].updatedAt = new Date().toISOString();
     currentBooking = bookings[idx];
     saveBookings(bookings);
-    removeBookingFromProviders(currentBooking);
-    pushBookingToProviders(currentBooking);
+
+    if (ACCalendarSync) {
+      if (typeof ACCalendarSync.removeBooking === 'function') {
+        ACCalendarSync.removeBooking(currentBooking);
+      }
+      if (typeof ACCalendarSync.pushBooking === 'function') {
+        ACCalendarSync.pushBooking(currentBooking);
+      }
+    }
+
     showBooking(currentBooking);
     notify(
       `Rendez-vous ${currentBooking.code} déplacé au ${formatDateLabel(
@@ -971,7 +717,6 @@
     reschedulePlaceholder.classList.remove('d-none');
   });
 
-  // Events
   serviceSelect.addEventListener('change', () => {
     updateServiceDisplay();
     selectedTime = null;
@@ -985,18 +730,24 @@
     renderSlotsForBooking();
   });
 
-  refreshSlotsBtn.addEventListener('click', () => {
-    selectedTime = null;
-    renderSlotsForBooking();
-  });
-
-  if (syncCalendarsBtn) {
-    syncCalendarsBtn.addEventListener('click', () => {
-      syncAllProviders();
+  if (refreshSlotsBtn) {
+    refreshSlotsBtn.addEventListener('click', () => {
+      selectedTime = null;
+      renderSlotsForBooking();
     });
   }
 
-  // Init
+  if (syncCalendarsBtn) {
+    syncCalendarsBtn.addEventListener('click', () => {
+      if (!ACCalendarSync) return;
+      ACCalendarSync.syncAllProviders();
+      renderCalendarSyncUI();
+      renderSlotsForBooking();
+      renderWeeklySlots();
+      renderBusyListForDate(dateInput.value);
+    });
+  }
+
   services.forEach((service) => {
     const option = document.createElement('option');
     option.value = service.id;
@@ -1007,11 +758,18 @@
   serviceSelect.value = services[0].id;
   setMinDate(dateInput);
   setMinDate(rescheduleDate);
-  pushExistingBookings();
-  renderCalendarSyncUI();
-  syncAllProviders();
+
+  if (ACCalendarSync) {
+    ACCalendarSync.pushExistingBookings();
+    ACCalendarSync.syncAllProviders();
+    renderCalendarSyncUI();
+  } else if (calendarProvidersContainer) {
+    calendarProvidersContainer.innerHTML =
+      '<div class="small text-muted">Synchronisation calendrier non disponible.</div>';
+  }
+
   updateServiceDisplay();
   renderSlotsForBooking();
   renderWeeklySlots();
   updateLiveSummary();
-})();
+})(window);
