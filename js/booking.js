@@ -91,7 +91,12 @@
   let calendarState = null;
 
   const formatTwo = (val) => val.toString().padStart(2, '0');
-  const formatCurrency = (val) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(val);
+  const formatCurrency = (val) =>
+    new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: 'EUR',
+      maximumFractionDigits: 0
+    }).format(val);
 
   const toISODate = (date) => {
     const y = date.getFullYear();
@@ -103,13 +108,19 @@
   const formatDateLabel = (dateStr) => {
     try {
       const date = new Date(`${dateStr}T00:00:00`);
-      return new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: '2-digit', month: 'short' }).format(date);
+      return new Intl.DateTimeFormat('fr-FR', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'short'
+      }).format(date);
     } catch (error) {
       return dateStr;
     }
   };
 
-  const minutesToTime = (minutes) => `${formatTwo(Math.floor(minutes / 60))}:${formatTwo(minutes % 60)}`;
+  const minutesToTime = (minutes) =>
+    `${formatTwo(Math.floor(minutes / 60))}:${formatTwo(minutes % 60)}`;
+
   const timeToMinutes = (timeStr) => {
     const [h, m] = timeStr.split(':').map(Number);
     return h * 60 + m;
@@ -131,13 +142,20 @@
     }
   };
 
-  const defaultCalendarState = () => ({
-    providers: CALENDAR_PROVIDERS.reduce((acc, provider) => {
-      acc[provider.id] = { connected: false, busy: [], lastSync: null, autoPush: true, autoPull: true };
-      return acc;
-    }, {}),
-    lastFullSync: null
-  });
+  const defaultCalendarState = () =>
+    ({
+      providers: CALENDAR_PROVIDERS.reduce((acc, provider) => {
+        acc[provider.id] = {
+          connected: false,
+          busy: [],
+          lastSync: null,
+          autoPush: true,
+          autoPull: true
+        };
+        return acc;
+      }, {}),
+      lastFullSync: null
+    });
 
   const loadCalendarState = () => {
     try {
@@ -169,12 +187,22 @@
     }
   };
 
-  const getProviderMeta = (id) => CALENDAR_PROVIDERS.find((p) => p.id === id) || { label: id, accent: '#94a3b8', icon: 'fas fa-calendar' };
+  const getProviderMeta = (id) =>
+    CALENDAR_PROVIDERS.find((p) => p.id === id) || {
+      label: id,
+      accent: '#94a3b8',
+      icon: 'fas fa-calendar'
+    };
 
   const formatLastSync = (iso) => {
     if (!iso) return 'Jamais synchronisé';
     try {
-      return new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+      return new Intl.DateTimeFormat('fr-FR', {
+        day: '2-digit',
+        month: 'short',
+        hour: '2-digit',
+        minute: '2-digit'
+      }).format(new Date(iso));
     } catch (error) {
       return 'Jamais synchronisé';
     }
@@ -204,7 +232,9 @@
     const providerState = calendarState.providers[providerId];
     if (!providerState) return;
     const templates = SAMPLE_BUSY[providerId] || [];
-    const imported = templates.map((tpl, idx) => buildBusyFromTemplate(providerId, tpl, idx));
+    const imported = templates.map((tpl, idx) =>
+      buildBusyFromTemplate(providerId, tpl, idx)
+    );
     providerState.connected = true;
     providerState.busy = [
       ...providerState.busy.filter((evt) => evt.origin === 'booking'),
@@ -216,10 +246,21 @@
   };
 
   const pushBookingToProviders = (booking) => {
+    // Par sécurité, on ne pousse jamais une réservation annulée dans les calendriers.
+    if (!booking || booking.status === 'cancelled') {
+      return;
+    }
+
     CALENDAR_PROVIDERS.forEach(({ id }) => {
       const providerState = calendarState.providers[id];
-      if (!providerState || !providerState.connected || providerState.autoPush === false) return;
-      providerState.busy = providerState.busy.filter((evt) => evt.bookingCode !== booking.code);
+      if (!providerState || !providerState.connected || providerState.autoPush === false) {
+        return;
+      }
+
+      providerState.busy = providerState.busy.filter(
+        (evt) => evt.bookingCode !== booking.code
+      );
+
       const endTime = minutesToTime(timeToMinutes(booking.time) + booking.duration);
       providerState.busy.push({
         id: `${booking.code}-${id}`,
@@ -234,6 +275,7 @@
       providerState.lastSync = new Date().toISOString();
       calendarState.lastFullSync = providerState.lastSync;
     });
+
     saveCalendarState(calendarState);
   };
 
@@ -241,7 +283,9 @@
     CALENDAR_PROVIDERS.forEach(({ id }) => {
       const providerState = calendarState.providers[id];
       if (!providerState) return;
-      providerState.busy = providerState.busy.filter((evt) => evt.bookingCode !== booking.code);
+      providerState.busy = providerState.busy.filter(
+        (evt) => evt.bookingCode !== booking.code
+      );
       if (providerState.connected) {
         providerState.lastSync = new Date().toISOString();
         calendarState.lastFullSync = providerState.lastSync;
@@ -259,25 +303,33 @@
     const busy = [];
     const dayStart = new Date(`${dateStr}T00:00:00`);
     const dayEnd = new Date(`${dateStr}T23:59:59`);
-    Object.entries(calendarState.providers || {}).forEach(([providerId, providerState]) => {
-      if (!providerState || !providerState.connected || providerState.autoPull === false) return;
-      providerState.busy.forEach((evt) => {
-        if (ignoreCode && evt.bookingCode === ignoreCode) return;
-        const start = new Date(evt.start);
-        const end = new Date(evt.end);
-        if (isNaN(start) || isNaN(end)) return;
-        if (end < dayStart || start > dayEnd) return;
-        busy.push({
-          start: Math.max(0, start.getHours() * 60 + start.getMinutes()),
-          end: Math.min(24 * 60, end.getHours() * 60 + end.getMinutes()),
-          source: evt.source || providerId,
-          providerId,
-          summary: evt.summary || 'Indispo externe',
-          bookingCode: evt.bookingCode || null,
-          origin: evt.origin || 'external'
+    Object.entries(calendarState.providers || {}).forEach(
+      ([providerId, providerState]) => {
+        if (
+          !providerState ||
+          !providerState.connected ||
+          providerState.autoPull === false
+        ) {
+          return;
+        }
+        providerState.busy.forEach((evt) => {
+          if (ignoreCode && evt.bookingCode === ignoreCode) return;
+          const start = new Date(evt.start);
+          const end = new Date(evt.end);
+          if (isNaN(start) || isNaN(end)) return;
+          if (end < dayStart || start > dayEnd) return;
+          busy.push({
+            start: Math.max(0, start.getHours() * 60 + start.getMinutes()),
+            end: Math.min(24 * 60, end.getHours() * 60 + end.getMinutes()),
+            source: evt.source || providerId,
+            providerId,
+            summary: evt.summary || 'Indispo externe',
+            bookingCode: evt.bookingCode || null,
+            origin: evt.origin || 'external'
+          });
         });
-      });
-    });
+      }
+    );
     return busy;
   };
 
@@ -313,7 +365,9 @@
 
   const getBusyWindows = (dateStr, ignoreCode) => {
     const bookingBusy = loadBookings()
-      .filter((b) => b.date === dateStr && b.status !== 'cancelled' && b.code !== ignoreCode)
+      .filter(
+        (b) => b.date === dateStr && b.status !== 'cancelled' && b.code !== ignoreCode
+      )
       .map((b) => ({
         start: timeToMinutes(b.time),
         end: timeToMinutes(b.time) + b.duration,
@@ -331,12 +385,20 @@
     if (!dateStr || !duration) return [];
     const busyWindows = getBusyWindows(dateStr, ignoreCode);
     const slots = [];
-    for (let minutes = OPENING.start; minutes + duration <= OPENING.end; minutes += SLOT_STEP) {
+    for (
+      let minutes = OPENING.start;
+      minutes + duration <= OPENING.end;
+      minutes += SLOT_STEP
+    ) {
       if (minutes >= OPENING.breakStart && minutes < OPENING.breakEnd) continue;
       const start = minutes;
       const end = minutes + duration;
       const blockers = busyWindows.filter((b) => start < b.end && end > b.start);
-      slots.push({ time: minutesToTime(minutes), available: !blockers.length, blockedBy: blockers });
+      slots.push({
+        time: minutesToTime(minutes),
+        available: !blockers.length,
+        blockedBy: blockers
+      });
     }
     return slots;
   };
@@ -367,16 +429,30 @@
     const deposit = service ? computeDeposit(service) : null;
     if (values[0]) values[0].textContent = service ? service.name : '--';
     if (values[1]) values[1].textContent = service ? `${service.duration} min` : '--';
-    if (values[2]) values[2].textContent = selectedTime ? `${formatDateLabel(dateInput.value)} - ${selectedTime}` : '--';
-    if (values[3]) values[3].textContent = deposit ? formatCurrency(deposit) : '--';
+    if (values[2]) {
+      values[2].textContent = selectedTime
+        ? `${formatDateLabel(dateInput.value)} - ${selectedTime}`
+        : '--';
+    }
+    if (values[3]) {
+      values[3].textContent = deposit ? formatCurrency(deposit) : '--';
+    }
   };
 
-  const renderSlots = (container, dateStr, duration, selectedValue, ignoreCode, onSelect) => {
+  const renderSlots = (
+    container,
+    dateStr,
+    duration,
+    selectedValue,
+    ignoreCode,
+    onSelect
+  ) => {
     if (!container) return [];
     container.innerHTML = '';
     const slots = generateSlots(dateStr, duration, ignoreCode);
     if (!slots.length) {
-      container.innerHTML = '<span class="text-muted small">Aucun créneau ouvert pour cette date.</span>';
+      container.innerHTML =
+        '<span class="text-muted small">Aucun créneau ouvert pour cette date.</span>';
       return slots;
     }
     slots.forEach((slot) => {
@@ -388,7 +464,14 @@
         btn.classList.add('disabled');
         btn.disabled = true;
         if (slot.blockedBy && slot.blockedBy.length) {
-          const sources = [...new Set(slot.blockedBy.map((b) => (getProviderMeta(b.providerId || b.source)).label || b.source))];
+          const sources = [
+            ...new Set(
+              slot.blockedBy.map(
+                (b) =>
+                  getProviderMeta(b.providerId || b.source).label || b.source
+              )
+            )
+          ];
           btn.title = `Indisponible (${sources.join(' / ')})`;
         }
       }
@@ -397,7 +480,9 @@
       }
       btn.addEventListener('click', () => {
         if (typeof onSelect === 'function') onSelect(slot.time);
-        container.querySelectorAll('.slot-button').forEach((b) => b.classList.remove('selected'));
+        container
+          .querySelectorAll('.slot-button')
+          .forEach((b) => b.classList.remove('selected'));
         btn.classList.add('selected');
       });
       container.appendChild(btn);
@@ -455,12 +540,15 @@
 
   const renderBusyListForDate = (dateStr) => {
     if (!calendarBusyList) return;
-    const busyEvents = getCalendarBusyForDate(dateStr).sort((a, b) => a.start - b.start);
+    const busyEvents = getCalendarBusyForDate(dateStr).sort(
+      (a, b) => a.start - b.start
+    );
     if (calendarBusyCount) {
       calendarBusyCount.textContent = busyEvents.length.toString();
     }
     if (!busyEvents.length) {
-      calendarBusyList.innerHTML = '<div class="text-muted small">Aucune indisponibilité importée.</div>';
+      calendarBusyList.innerHTML =
+        '<div class="text-muted small">Aucune indisponibilité importée.</div>';
       return;
     }
     calendarBusyList.innerHTML = '';
@@ -472,7 +560,9 @@
         <div class="d-flex justify-content-between align-items-start gap-2">
           <div>
             <div class="fw-semibold">${evt.summary}</div>
-            <div class="small text-muted"><span class="busy-time">${minutesToTime(evt.start)} - ${minutesToTime(evt.end)}</span> · ${meta.label}</div>
+            <div class="small text-muted"><span class="busy-time">${minutesToTime(
+              evt.start
+            )} - ${minutesToTime(evt.end)}</span> · ${meta.label}</div>
           </div>
           <span class="provider-dot" style="background:${meta.accent}"></span>
         </div>
@@ -501,7 +591,9 @@
       const available = slots.filter((s) => s.available).length;
       const busyCount = getCalendarBusyForDate(dateInput.value).length;
       const extra = busyCount ? ` · ${busyCount} indispos importées` : '';
-      slotHint.textContent = available > 0 ? `${available} créneaux ouverts${extra}` : 'Aucun créneau libre ce jour';
+      slotHint.textContent = available
+        ? `${available} créneaux ouverts${extra}`
+        : 'Aucun créneau libre ce jour';
     }
     renderBusyListForDate(dateInput.value);
   };
@@ -513,11 +605,14 @@
       return provider && provider.connected;
     });
     if (!connected.length) {
-      calendarSyncStatus.textContent = 'Aucun calendrier connecté. Activez Google, Outlook ou Apple pour bloquer les indispos.';
+      calendarSyncStatus.textContent =
+        'Aucun calendrier connecté. Activez Google, Outlook ou Apple pour bloquer les indispos.';
       return;
     }
     const labels = connected.map((p) => p.label).join(' · ');
-    const last = calendarState.lastFullSync ? `Dern. sync ${formatLastSync(calendarState.lastFullSync)}` : 'Sync en attente';
+    const last = calendarState.lastFullSync
+      ? `Dern. sync ${formatLastSync(calendarState.lastFullSync)}`
+      : 'Sync en attente';
     calendarSyncStatus.textContent = `${labels} connectés. ${last}.`;
   };
 
@@ -567,28 +662,40 @@
           <span class="provider-dot" style="background:${provider.accent}"></span>
           <div>
             <div class="fw-semibold">${provider.label}</div>
-            <div class="small text-muted">${state.connected ? `Connecté · ${formatLastSync(state.lastSync)}` : 'Non connecté'}</div>
+            <div class="small text-muted">${
+              state.connected
+                ? `Connecté · ${formatLastSync(state.lastSync)}`
+                : 'Non connecté'
+            }</div>
           </div>
         </div>
         <div class="d-flex align-items-center gap-2">
           <div class="form-check form-switch mb-0">
-            <input class="form-check-input provider-toggle" type="checkbox" role="switch" data-provider="${provider.id}" ${state.connected ? 'checked' : ''} aria-label="Activer ${provider.label}">
+            <input class="form-check-input provider-toggle" type="checkbox" role="switch" data-provider="${
+              provider.id
+            }" ${state.connected ? 'checked' : ''} aria-label="Activer ${
+        provider.label
+      }">
           </div>
-          <button class="btn btn-light btn-sm provider-resync" data-provider="${provider.id}" title="Resynchroniser ${provider.label}"><i class="fas fa-rotate"></i></button>
+          <button class="btn btn-light btn-sm provider-resync" data-provider="${
+            provider.id
+          }" title="Resynchroniser ${provider.label}"><i class="fas fa-rotate"></i></button>
         </div>
       `;
       calendarProvidersContainer.appendChild(row);
     });
-    calendarProvidersContainer.querySelectorAll('.provider-toggle').forEach((input) => {
-      input.addEventListener('change', (event) => {
-        const id = event.target.getAttribute('data-provider');
-        if (event.target.checked) {
-          connectProvider(id);
-        } else {
-          disconnectProvider(id);
-        }
+    calendarProvidersContainer
+      .querySelectorAll('.provider-toggle')
+      .forEach((input) => {
+        input.addEventListener('change', (event) => {
+          const id = event.target.getAttribute('data-provider');
+          if (event.target.checked) {
+            connectProvider(id);
+          } else {
+            disconnectProvider(id);
+          }
+        });
       });
-    });
     calendarProvidersContainer.querySelectorAll('.provider-resync').forEach((btn) => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-provider');
@@ -630,7 +737,8 @@
     return numberOk && expiryOk && cvcOk;
   };
 
-  const createCode = () => `AC-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+  const createCode = () =>
+    `AC-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
   const joinNotifications = (notif) => {
     const parts = [];
@@ -690,7 +798,11 @@
     pushBookingToProviders(booking);
 
     notify(
-      `${booking.name} - ${booking.serviceName} le ${formatDateLabel(booking.date)} à ${booking.time}. Acompte de ${formatCurrency(booking.deposit)} enregistré. Code : ${booking.code}.`
+      `${booking.name} - ${booking.serviceName} le ${formatDateLabel(
+        booking.date
+      )} à ${booking.time}. Acompte de ${formatCurrency(
+        booking.deposit
+      )} enregistré. Code : ${booking.code}.`
     );
     manageCode.value = booking.code;
     manageEmail.value = booking.email;
@@ -703,9 +815,15 @@
   const renderBookingDetails = (booking) => {
     bookingDetails.innerHTML = `
       <li><strong>Service</strong> : ${booking.serviceName}</li>
-      <li><strong>Créneau</strong> : ${formatDateLabel(booking.date)} - ${booking.time}</li>
-      <li><strong>Acompte</strong> : ${formatCurrency(booking.deposit)} (${Math.round(booking.depositRate * 100)}%)</li>
-      <li><strong>Notifications</strong> : ${joinNotifications(booking.notifications)}</li>
+      <li><strong>Créneau</strong> : ${formatDateLabel(booking.date)} - ${
+      booking.time
+    }</li>
+      <li><strong>Acompte</strong> : ${formatCurrency(
+        booking.deposit
+      )} (${Math.round(booking.depositRate * 100)}%)</li>
+      <li><strong>Notifications</strong> : ${joinNotifications(
+        booking.notifications
+      )}</li>
       <li><strong>Code</strong> : ${booking.code}</li>
     `;
   };
@@ -737,7 +855,8 @@
       manageResult.classList.remove('d-none');
       bookingStatusBadge.className = 'badge status-cancelled';
       bookingStatusBadge.textContent = 'Introuvable';
-      bookingDetails.innerHTML = '<li class="text-danger">Aucune réservation trouvée.</li>';
+      bookingDetails.innerHTML =
+        '<li class="text-danger">Aucune réservation trouvée.</li>';
       reschedulePanel.classList.add('d-none');
       return;
     }
@@ -750,14 +869,20 @@
     const bookings = loadBookings();
     const idx = bookings.findIndex((b) => b.code === currentBooking.code);
     if (idx === -1) return;
+
     bookings[idx].status = 'cancelled';
     bookings[idx].updatedAt = new Date().toISOString();
     currentBooking = bookings[idx];
     saveBookings(bookings);
+
+    // On supprime la réservation des calendriers connectés sans la republier,
+    // afin de libérer réellement le créneau.
     removeBookingFromProviders(currentBooking);
-    pushBookingToProviders(currentBooking);
+
     showBooking(currentBooking);
-    notify(`Rendez-vous ${currentBooking.code} annulé. Le créneau est libéré.`);
+    notify(
+      `Rendez-vous ${currentBooking.code} annulé. Le créneau est libéré.`
+    );
     renderSlotsForBooking();
     renderWeeklySlots();
     renderBusyListForDate(dateInput.value);
@@ -766,7 +891,10 @@
   const renderRescheduleWarning = (text) => {
     const existing = rescheduleSlots.querySelector('.reschedule-warning');
     if (existing) existing.remove();
-    rescheduleSlots.insertAdjacentHTML('beforeend', `<div class="text-danger small reschedule-warning">${text}</div>`);
+    rescheduleSlots.insertAdjacentHTML(
+      'beforeend',
+      `<div class="text-danger small reschedule-warning">${text}</div>`
+    );
   };
 
   const renderReschedule = () => {
@@ -805,7 +933,14 @@
       return;
     }
 
-    if (!isSlotAvailable(newDate, selectedRescheduleTime, currentBooking.duration, currentBooking.code)) {
+    if (
+      !isSlotAvailable(
+        newDate,
+        selectedRescheduleTime,
+        currentBooking.duration,
+        currentBooking.code
+      )
+    ) {
       renderRescheduleWarning('Créneau indisponible.');
       renderReschedule();
       return;
@@ -824,7 +959,11 @@
     removeBookingFromProviders(currentBooking);
     pushBookingToProviders(currentBooking);
     showBooking(currentBooking);
-    notify(`Rendez-vous ${currentBooking.code} déplacé au ${formatDateLabel(newDate)} à ${selectedRescheduleTime}.`);
+    notify(
+      `Rendez-vous ${currentBooking.code} déplacé au ${formatDateLabel(
+        newDate
+      )} à ${selectedRescheduleTime}.`
+    );
     renderSlotsForBooking();
     renderWeeklySlots();
     renderBusyListForDate(dateInput.value);
