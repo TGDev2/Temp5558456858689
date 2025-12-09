@@ -1,33 +1,33 @@
-(function(window) {
+(function (window) {
   'use strict';
 
   const bookingForm = document.getElementById('bookingForm');
   if (!bookingForm) return;
 
   const ACBooking = window.ACBooking;
+  const ACApi = window.ACApi;
+
   if (!ACBooking) {
     console.error('ACBooking non initialisé');
+    return;
+  }
+
+  if (!ACApi) {
+    console.error('ACApi non initialisé');
     return;
   }
 
   const ACCalendarSync = window.ACCalendarSync || null;
 
   const {
-    services,
     formatCurrency,
     toISODate,
     formatDateLabel,
     minutesToTime,
-    timeToMinutes,
-    getServiceById,
-    computeDeposit,
-    generateSlots,
-    createBooking,
-    findBookingByCodeAndEmail,
-    cancelBooking,
-    rescheduleBooking
+    timeToMinutes
   } = ACBooking;
 
+  // Elements du DOM
   const serviceSelect = document.getElementById('serviceSelect');
   const serviceDetails = document.getElementById('serviceDetails');
   const dateInput = document.getElementById('dateInput');
@@ -70,12 +70,16 @@
   const refreshReschedule = document.getElementById('refreshReschedule');
   const confirmReschedule = document.getElementById('confirmReschedule');
 
-  const calendarProvidersContainer = document.getElementById('calendarProviders');
+  const calendarProvidersContainer = document.getElementById(
+    'calendarProviders'
+  );
   const calendarBusyList = document.getElementById('calendarBusyList');
   const calendarBusyCount = document.getElementById('busyCountBadge');
   const calendarSyncStatus = document.getElementById('calendarSyncStatus');
   const syncCalendarsBtn = document.getElementById('syncCalendarsBtn');
 
+  // État local
+  let services = [];
   let selectedTime = null;
   let selectedRescheduleTime = null;
   let currentBooking = null;
@@ -106,17 +110,51 @@
     if (!input.value) input.value = iso;
   };
 
+  const getServiceById = (id) =>
+    services.find((service) => service.id === id) || null;
+
+  const computeDeposit = (service) => {
+    if (!service) return 0;
+    const price =
+      typeof service.price === 'number'
+        ? service.price
+        : (service.basePriceCents || 0) / 100;
+    return Math.round(price * (service.depositRate || 0));
+  };
+
   const updateServiceDisplay = () => {
     const service = getServiceById(serviceSelect.value);
-    if (!service) return;
-    const deposit = computeDeposit(service);
-    const percent = Math.round(service.depositRate * 100);
-    depositAmount.textContent = formatCurrency(deposit);
-    depositAmountInline.textContent = `${formatCurrency(deposit)} (${percent}%)`;
-    depositLabel.textContent = `${percent}%`;
-    if (serviceDetails) {
-      serviceDetails.textContent = `Durée ${service.duration} min - ${service.price} €`;
+    if (!service) {
+      depositAmount.textContent = '-- €';
+      depositAmountInline.textContent = '-- €';
+      depositLabel.textContent = '--';
+      if (serviceDetails) {
+        serviceDetails.textContent = '';
+      }
+      return;
     }
+
+    const deposit = computeDeposit(service);
+    const percent = Math.round((service.depositRate || 0) * 100);
+
+    depositAmount.textContent = formatCurrency(deposit);
+    depositAmountInline.textContent = `${formatCurrency(
+      deposit
+    )} (${percent}%)`;
+    depositLabel.textContent = `${percent}%`;
+
+    if (serviceDetails) {
+      const price =
+        typeof service.price === 'number'
+          ? service.price
+          : (service.basePriceCents || 0) / 100;
+      const duration =
+        typeof service.duration === 'number'
+          ? service.duration
+          : service.durationMinutes;
+      serviceDetails.textContent = `Durée ${duration} min - ${price} €`;
+    }
+
     updateLiveSummary();
   };
 
@@ -127,7 +165,13 @@
     const deposit = service ? computeDeposit(service) : null;
 
     if (values[0]) values[0].textContent = service ? service.name : '--';
-    if (values[1]) values[1].textContent = service ? `${service.duration} min` : '--';
+    if (values[1]) {
+      const duration =
+        service && (service.duration || service.durationMinutes)
+          ? service.duration || service.durationMinutes
+          : null;
+      values[1].textContent = duration ? `${duration} min` : '--';
+    }
     if (values[2]) {
       values[2].textContent = selectedTime
         ? `${formatDateLabel(dateInput.value)} - ${selectedTime}`
@@ -138,22 +182,14 @@
     }
   };
 
-  const renderSlots = (
-    container,
-    dateStr,
-    duration,
-    selectedValue,
-    ignoreCode,
-    onSelect
-  ) => {
+  const renderSlots = (container, slots, selectedValue, onSelect) => {
     if (!container) return [];
     container.innerHTML = '';
 
-    const slots = generateSlots(dateStr, duration, ignoreCode);
-    if (!slots.length) {
+    if (!slots || !slots.length) {
       container.innerHTML =
         '<span class="text-muted small">Aucun créneau ouvert pour cette date.</span>';
-      return slots;
+      return [];
     }
 
     slots.forEach((slot) => {
@@ -165,21 +201,24 @@
       if (!slot.available) {
         btn.classList.add('disabled');
         btn.disabled = true;
+
         if (slot.blockedBy && slot.blockedBy.length) {
-          const sources = [...new Set(
-            slot.blockedBy.map((b) => {
-              if (
-                ACCalendarSync &&
-                typeof ACCalendarSync.getProviderMeta === 'function'
-              ) {
-                return (
-                  ACCalendarSync.getProviderMeta(b.providerId || b.source).label ||
-                  b.source
-                );
-              }
-              return b.providerId || b.source || 'indisponible';
-            })
-          )];
+          const sources = [
+            ...new Set(
+              slot.blockedBy.map((b) => {
+                if (
+                  ACCalendarSync &&
+                  typeof ACCalendarSync.getProviderMeta === 'function' &&
+                  b.providerId
+                ) {
+                  const meta = ACCalendarSync.getProviderMeta(b.providerId);
+                  return meta.label || b.providerId;
+                }
+                if (b.summary) return b.summary;
+                return 'Indisponible';
+              })
+            )
+          ];
           btn.title = `Indisponible (${sources.join(' / ')})`;
         }
       }
@@ -189,7 +228,9 @@
       }
 
       btn.addEventListener('click', () => {
-        if (typeof onSelect === 'function') onSelect(slot.time);
+        if (typeof onSelect === 'function' && slot.available) {
+          onSelect(slot.time);
+        }
         container
           .querySelectorAll('.slot-button')
           .forEach((b) => b.classList.remove('selected'));
@@ -214,8 +255,7 @@
       return;
     }
 
-    const busyEvents = ACCalendarSync
-      .getBusyForDate(dateStr)
+    const busyEvents = ACCalendarSync.getBusyForDate(dateStr)
       .slice()
       .sort((a, b) => a.start - b.start);
 
@@ -239,7 +279,9 @@
           <div>
             <div class="fw-semibold">${evt.summary}</div>
             <div class="small text-muted">
-              <span class="busy-time">${minutesToTime(evt.start)} - ${minutesToTime(evt.end)}</span> · ${meta.label}
+              <span class="busy-time">${minutesToTime(
+                evt.start
+              )} - ${minutesToTime(evt.end)}</span> · ${meta.label}
             </div>
           </div>
           <span class="provider-dot" style="background:${meta.accent}"></span>
@@ -249,17 +291,18 @@
     });
   };
 
-  const renderWeeklySlots = () => {
-    if (!weeklySlots) return;
+  const renderWeeklySlots = async () => {
+    if (!weeklySlots || !services.length) return;
+
     const service = getServiceById(serviceSelect.value) || services[0];
     const today = new Date();
     weeklySlots.innerHTML = '';
 
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 7; i += 1) {
       const day = new Date(today);
       day.setDate(today.getDate() + i);
       const dateStr = toISODate(day);
-      const slots = generateSlots(dateStr, service.duration);
+
       const card = document.createElement('div');
       card.className = 'weekly-day';
 
@@ -269,32 +312,45 @@
 
       const meta = document.createElement('div');
       meta.className = 'small text-muted mb-1';
-      meta.textContent = `${slots.filter((s) => s.available).length} créneaux libres`;
+      meta.textContent = 'Chargement des créneaux...';
       card.appendChild(meta);
 
-      if (!slots.length) {
-        const empty = document.createElement('div');
-        empty.className = 'text-muted small';
-        empty.textContent = 'Complet ou fermé';
-        card.appendChild(empty);
-      } else {
-        const topSlots = slots.filter((s) => s.available).slice(0, 3);
-        if (!topSlots.length) {
-          const noSlot = document.createElement('div');
-          noSlot.className = 'text-muted small';
-          noSlot.textContent = 'Déjà réservé';
-          card.appendChild(noSlot);
-        } else {
-          topSlots.forEach((slot) => {
-            const chip = document.createElement('span');
-            chip.className = 'slot-chip';
-            chip.innerHTML = `<i class="fas fa-clock"></i> ${slot.time}`;
-            card.appendChild(chip);
-          });
-        }
-      }
-
       weeklySlots.appendChild(card);
+
+      try {
+        const { slots } = await ACApi.getAvailability({
+          serviceId: service.id,
+          date: dateStr
+        });
+
+        const availableSlots = (slots || []).filter((s) => s.available);
+        meta.textContent = `${availableSlots.length} créneaux libres`;
+
+        if (!slots || !slots.length) {
+          const empty = document.createElement('div');
+          empty.className = 'text-muted small';
+          empty.textContent = 'Complet ou fermé';
+          card.appendChild(empty);
+        } else {
+          const topSlots = availableSlots.slice(0, 3);
+          if (!topSlots.length) {
+            const noSlot = document.createElement('div');
+            noSlot.className = 'text-muted small';
+            noSlot.textContent = 'Déjà réservé';
+            card.appendChild(noSlot);
+          } else {
+            topSlots.forEach((slot) => {
+              const chip = document.createElement('span');
+              chip.className = 'slot-chip';
+              chip.innerHTML = `<i class="fas fa-clock"></i> ${slot.time}`;
+              card.appendChild(chip);
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement des créneaux hebdomadaires', error);
+        meta.textContent = 'Erreur de chargement.';
+      }
     }
   };
 
@@ -357,7 +413,9 @@
             <div class="fw-semibold">${provider.label}</div>
             <div class="small text-muted">${
               providerState.connected
-                ? `Connecté · ${ACCalendarSync.formatLastSync(providerState.lastSync)}`
+                ? `Connecté · ${ACCalendarSync.formatLastSync(
+                    providerState.lastSync
+                  )}`
                 : 'Non connecté'
             }</div>
           </div>
@@ -365,10 +423,14 @@
         <div class="d-flex align-items-center gap-2">
           <div class="form-check form-switch mb-0">
             <input class="form-check-input provider-toggle" type="checkbox" role="switch"
-              data-provider="${provider.id}" ${providerState.connected ? 'checked' : ''}
+              data-provider="${provider.id}" ${
+        providerState.connected ? 'checked' : ''
+      }
               aria-label="Activer ${provider.label}">
           </div>
-          <button class="btn btn-light btn-sm provider-resync" data-provider="${provider.id}"
+          <button class="btn btn-light btn-sm provider-resync" data-provider="${
+            provider.id
+          }"
             title="Resynchroniser ${provider.label}">
             <i class="fas fa-rotate"></i>
           </button>
@@ -413,48 +475,79 @@
     updateCalendarSyncStatus();
   };
 
-  const renderSlotsForBooking = () => {
-    const service = getServiceById(serviceSelect.value);
-    if (!service) return;
+  const renderSlotsForBooking = async () => {
+    if (!slotList || !services.length) return;
 
-    const slots = renderSlots(
-      slotList,
-      dateInput.value,
-      service.duration,
-      selectedTime,
-      undefined,
-      (time) => {
-        selectedTime = time;
-        slotError.style.display = 'none';
-        slotError.textContent = 'Veuillez choisir un créneau libre.';
-        updateLiveSummary();
-      }
-    );
+    const service = getServiceById(serviceSelect.value) || services[0];
 
-    if (slotHint) {
-      const available = slots.filter((s) => s.available).length;
-      const busyCount =
-        ACCalendarSync && typeof ACCalendarSync.getBusyForDate === 'function'
-          ? ACCalendarSync.getBusyForDate(dateInput.value).length
-          : 0;
-      const extra = busyCount ? ` · ${busyCount} indispos importées` : '';
-      slotHint.textContent = available
-        ? `${available} créneaux ouverts${extra}`
-        : 'Aucun créneau libre ce jour';
+    if (!service || !dateInput.value) {
+      slotList.innerHTML =
+        '<span class="text-muted small">Sélectionnez un service et une date.</span>';
+      return;
     }
 
-    renderBusyListForDate(dateInput.value);
+    try {
+      const response = await ACApi.getAvailability({
+        serviceId: service.id,
+        date: dateInput.value
+      });
+
+      const slots = renderSlots(
+        slotList,
+        response.slots || [],
+        selectedTime,
+        (time) => {
+          selectedTime = time;
+          if (slotError) {
+            slotError.style.display = 'none';
+            slotError.textContent = 'Veuillez choisir un créneau libre.';
+          }
+          updateLiveSummary();
+        }
+      );
+
+      if (slotHint) {
+        const available = (slots || []).filter((s) => s.available).length;
+        const busyCount =
+          ACCalendarSync &&
+          typeof ACCalendarSync.getBusyForDate === 'function'
+            ? ACCalendarSync.getBusyForDate(dateInput.value).length
+            : 0;
+        const extra = busyCount ? ` · ${busyCount} indispos importées` : '';
+        slotHint.textContent = available
+          ? `${available} créneaux ouverts${extra}`
+          : 'Aucun créneau libre ce jour';
+      }
+
+      renderBusyListForDate(dateInput.value);
+    } catch (error) {
+      console.error('Erreur lors du chargement des créneaux', error);
+      slotList.innerHTML =
+        '<span class="text-danger small">Impossible de charger les créneaux pour cette date.</span>';
+      if (slotHint) {
+        slotHint.textContent =
+          'Erreur de chargement des créneaux. Merci de réessayer.';
+      }
+    }
   };
 
   const resetFormState = () => {
     bookingForm.classList.remove('was-validated');
     selectedTime = null;
     bookingForm.reset();
-    serviceSelect.value = services[0].id;
+
+    if (services.length) {
+      serviceSelect.value = services[0].id;
+    }
+
     emailNotif.checked = true;
     smsNotif.checked = true;
-    slotError.style.display = 'none';
-    slotError.textContent = 'Veuillez choisir un créneau libre.';
+
+    if (slotError) {
+      slotError.style.display = 'none';
+      slotError.textContent = 'Veuillez choisir un créneau libre.';
+    }
+
     setMinDate(dateInput);
     updateServiceDisplay();
     renderSlotsForBooking();
@@ -484,7 +577,7 @@
     return parts.length ? parts.join(' + ') : 'Aucune';
   };
 
-  bookingForm.addEventListener('submit', (event) => {
+  bookingForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const service = getServiceById(serviceSelect.value);
     if (!service) return;
@@ -504,20 +597,23 @@
 
     const date = dateInput.value;
 
-    let booking;
+    let bookingResponse;
     try {
-      booking = createBooking({
+      bookingResponse = await ACApi.createBooking({
         serviceId: service.id,
         date,
         time: selectedTime,
-        name: nameInput.value.trim(),
-        email: emailInput.value.trim(),
-        phone: phoneInput.value.trim(),
+        customer: {
+          name: nameInput.value.trim(),
+          email: emailInput.value.trim(),
+          phone: phoneInput.value.trim()
+        },
         notifications: { email: emailNotif.checked, sms: smsNotif.checked }
       });
     } catch (error) {
       if (error && error.code === 'SLOT_UNAVAILABLE') {
-        slotError.textContent = 'Créneau déjà réservé, choisissez-en un autre.';
+        slotError.textContent =
+          'Créneau déjà réservé, choisissez-en un autre.';
         slotError.style.display = 'block';
         renderSlotsForBooking();
         return;
@@ -530,8 +626,12 @@
       return;
     }
 
-    if (ACCalendarSync && typeof ACCalendarSync.pushBooking === 'function') {
-      ACCalendarSync.pushBooking(booking);
+    const booking = bookingResponse && bookingResponse.booking;
+    if (!booking) {
+      slotError.textContent =
+        'La réservation a échoué pour une raison inconnue. Merci de réessayer.';
+      slotError.style.display = 'block';
+      return;
     }
 
     notify(
@@ -578,18 +678,37 @@
     rescheduleDate.value = booking.date;
   };
 
-  manageForm.addEventListener('submit', (event) => {
+  manageForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const code = manageCode.value.trim();
     const email = manageEmail.value.trim();
 
-    let booking = null;
+    let bookingResponse = null;
     try {
-      booking = findBookingByCodeAndEmail(code, email);
+      bookingResponse = await ACApi.getBookingPublic({ code, email });
     } catch (error) {
       console.error('Erreur lors de la recherche de réservation', error);
+
+      manageResult.classList.remove('d-none');
+      bookingStatusBadge.className = 'badge status-cancelled';
+
+      if (error && error.code === 'BOOKING_NOT_FOUND') {
+        bookingStatusBadge.textContent = 'Introuvable';
+        bookingDetails.innerHTML =
+          '<li class="text-danger">Aucune réservation trouvée.</li>';
+      } else {
+        bookingStatusBadge.textContent = 'Erreur';
+        bookingDetails.innerHTML =
+          '<li class="text-danger">Une erreur est survenue. Merci de réessayer.</li>';
+      }
+
+      reschedulePanel.classList.add('d-none');
+      reschedulePlaceholder.classList.remove('d-none');
+      currentBooking = null;
+      return;
     }
 
+    const booking = bookingResponse && bookingResponse.booking;
     if (!booking) {
       manageResult.classList.remove('d-none');
       bookingStatusBadge.className = 'badge status-cancelled';
@@ -605,25 +724,28 @@
     showBooking(booking);
   });
 
-  cancelBtn.addEventListener('click', () => {
+  cancelBtn.addEventListener('click', async () => {
     if (!currentBooking) return;
 
-    let updated;
+    let response;
     try {
-      updated = cancelBooking(currentBooking.code);
+      response = await ACApi.cancelBooking({ code: currentBooking.code });
     } catch (error) {
-      console.error('Erreur lors de l’annulation de la réservation', error);
+      console.error("Erreur lors de l’annulation de la réservation", error);
       notify(
         'Impossible d’annuler ce rendez-vous pour le moment. Merci de réessayer.'
       );
       return;
     }
 
-    currentBooking = updated;
-
-    if (ACCalendarSync && typeof ACCalendarSync.removeBooking === 'function') {
-      ACCalendarSync.removeBooking(currentBooking);
+    if (!response || !response.booking) {
+      notify(
+        'Impossible d’annuler ce rendez-vous pour le moment. Merci de réessayer.'
+      );
+      return;
     }
+
+    currentBooking = response.booking;
 
     showBooking(currentBooking);
     notify(
@@ -643,21 +765,37 @@
     );
   };
 
-  const renderReschedule = () => {
+  const renderReschedule = async () => {
     if (!currentBooking) return;
     setMinDate(rescheduleDate);
-    renderSlots(
-      rescheduleSlots,
-      rescheduleDate.value || currentBooking.date,
-      currentBooking.duration,
-      selectedRescheduleTime,
-      currentBooking.code,
-      (time) => {
-        selectedRescheduleTime = time;
-        const warn = rescheduleSlots.querySelector('.reschedule-warning');
-        if (warn) warn.remove();
-      }
-    );
+
+    const targetDate = rescheduleDate.value || currentBooking.date;
+
+    try {
+      const response = await ACApi.getAvailability({
+        serviceId: currentBooking.serviceId,
+        date: targetDate,
+        ignoreCode: currentBooking.code
+      });
+
+      renderSlots(
+        rescheduleSlots,
+        response.slots || [],
+        selectedRescheduleTime,
+        (time) => {
+          selectedRescheduleTime = time;
+          const warn = rescheduleSlots.querySelector('.reschedule-warning');
+          if (warn) warn.remove();
+        }
+      );
+    } catch (error) {
+      console.error(
+        'Erreur lors du chargement des créneaux pour la replanification',
+        error
+      );
+      rescheduleSlots.innerHTML =
+        '<div class="text-danger small">Impossible de charger les créneaux pour cette date.</div>';
+    }
   };
 
   rescheduleBtn.addEventListener('click', () => {
@@ -669,9 +807,11 @@
     renderReschedule();
   });
 
-  refreshReschedule.addEventListener('click', renderReschedule);
+  refreshReschedule.addEventListener('click', () => {
+    renderReschedule();
+  });
 
-  confirmReschedule.addEventListener('click', () => {
+  confirmReschedule.addEventListener('click', async () => {
     if (!currentBooking) return;
     const newDate = rescheduleDate.value || currentBooking.date;
     if (!selectedRescheduleTime) {
@@ -679,13 +819,13 @@
       return;
     }
 
-    let updated;
+    let response;
     try {
-      updated = rescheduleBooking(
-        currentBooking.code,
+      response = await ACApi.rescheduleBooking({
+        code: currentBooking.code,
         newDate,
-        selectedRescheduleTime
-      );
+        newTime: selectedRescheduleTime
+      });
     } catch (error) {
       if (error && error.code === 'SLOT_UNAVAILABLE') {
         renderRescheduleWarning('Créneau indisponible.');
@@ -699,16 +839,14 @@
       return;
     }
 
-    currentBooking = updated;
-
-    if (ACCalendarSync) {
-      if (typeof ACCalendarSync.removeBooking === 'function') {
-        ACCalendarSync.removeBooking(currentBooking);
-      }
-      if (typeof ACCalendarSync.pushBooking === 'function') {
-        ACCalendarSync.pushBooking(currentBooking);
-      }
+    if (!response || !response.booking) {
+      renderRescheduleWarning(
+        'Impossible de modifier ce rendez-vous pour le moment.'
+      );
+      return;
     }
+
+    currentBooking = response.booking;
 
     showBooking(currentBooking);
     notify(
@@ -754,28 +892,82 @@
     });
   }
 
-  services.forEach((service) => {
-    const option = document.createElement('option');
-    option.value = service.id;
-    option.textContent = `${service.name} - ${service.duration} min - ${service.price} €`;
-    serviceSelect.appendChild(option);
-  });
+  async function loadServices() {
+    try {
+      const response = await ACApi.listServices();
+      const fetched = Array.isArray(response && response.services)
+        ? response.services
+        : [];
 
-  serviceSelect.value = services[0].id;
-  setMinDate(dateInput);
-  setMinDate(rescheduleDate);
+      services = fetched.filter((s) => s.isActive !== false);
 
-  if (ACCalendarSync) {
-    ACCalendarSync.pushExistingBookings();
-    ACCalendarSync.syncAllProviders();
-    renderCalendarSyncUI();
-  } else if (calendarProvidersContainer) {
-    calendarProvidersContainer.innerHTML =
-      '<div class="small text-muted">Synchronisation calendrier non disponible.</div>';
+      if (!services.length) {
+        throw new Error('Aucun service disponible');
+      }
+
+      serviceSelect.innerHTML = '';
+
+      services.forEach((service) => {
+        const price =
+          typeof service.price === 'number'
+            ? service.price
+            : (service.basePriceCents || 0) / 100;
+        const duration =
+          typeof service.duration === 'number'
+            ? service.duration
+            : service.durationMinutes;
+        const option = document.createElement('option');
+        option.value = service.id;
+        option.textContent = `${service.name} - ${duration} min - ${price} €`;
+        serviceSelect.appendChild(option);
+      });
+
+      serviceSelect.value = services[0].id;
+    } catch (error) {
+      console.error('Erreur lors du chargement des services', error);
+      services = [];
+      if (serviceSelect) {
+        serviceSelect.innerHTML =
+          '<option value="">Aucun service disponible</option>';
+      }
+      bookingForm
+        .querySelectorAll('button, input, select, textarea')
+        .forEach((el) => {
+          if (el !== serviceSelect) el.disabled = true;
+        });
+      if (slotHint) {
+        slotHint.textContent =
+          'Impossible de charger les services pour le moment. Merci de réessayer plus tard.';
+      }
+    }
   }
 
-  updateServiceDisplay();
-  renderSlotsForBooking();
-  renderWeeklySlots();
-  updateLiveSummary();
+  async function init() {
+    await loadServices();
+    if (!services.length) return;
+
+    setMinDate(dateInput);
+    setMinDate(rescheduleDate);
+
+    if (ACCalendarSync) {
+      ACCalendarSync.pushExistingBookings();
+      ACCalendarSync.syncAllProviders();
+      renderCalendarSyncUI();
+    } else if (calendarProvidersContainer) {
+      calendarProvidersContainer.innerHTML =
+        '<div class="small text-muted">Synchronisation calendrier non disponible.</div>';
+    }
+
+    updateServiceDisplay();
+    await renderSlotsForBooking();
+    await renderWeeklySlots();
+    updateLiveSummary();
+  }
+
+  init().catch((error) => {
+    console.error(
+      "Erreur lors de l’initialisation du module de réservation",
+      error
+    );
+  });
 })(window);
