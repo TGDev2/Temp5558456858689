@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const { logger } = require('./utils/logger');
 const { errorHandler } = require('./api/middlewares/errorHandler');
 const healthRoutes = require('./api/routes/healthRoutes');
+const serviceRoutes = require('./api/routes/serviceRoutes');
 
 const app = express();
 
@@ -17,7 +18,12 @@ const corsOptions = {
   origin:
     process.env.NODE_ENV === 'production'
       ? process.env.FRONTEND_URL
-      : ['http://localhost:8000', 'http://127.0.0.1:8000'],
+      : [
+          'http://localhost:8000',
+          'http://127.0.0.1:8000',
+          'http://localhost:5500',
+          'http://127.0.0.1:5500',
+        ],
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -38,8 +44,9 @@ if (process.env.NODE_ENV !== 'test') {
   );
 }
 
-// Routes API
-app.use('/api/v1', healthRoutes);
+// Routes API v1
+app.use('/api/v1/health', healthRoutes);
+app.use('/api/v1/services', serviceRoutes);
 
 // Route racine
 app.get('/', (req, res) => {
@@ -47,6 +54,10 @@ app.get('/', (req, res) => {
     message: 'ArtisanConnect API',
     version: '1.0.0',
     documentation: '/api/v1/health',
+    endpoints: {
+      health: 'GET /api/v1/health',
+      services: 'GET /api/v1/services',
+    },
   });
 });
 

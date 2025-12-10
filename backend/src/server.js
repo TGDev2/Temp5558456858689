@@ -13,6 +13,9 @@ const startServer = () => {
     logger.info(
       `Health check disponible sur: http://localhost:${PORT}/api/v1/health`
     );
+    logger.info(
+      `Services disponibles sur: http://localhost:${PORT}/api/v1/services`
+    );
   });
 };
 
