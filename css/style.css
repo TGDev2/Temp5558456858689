@@ -96,8 +96,8 @@ nav ul li a.active {
 
 .ac-navbar {
     background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(18px);
     -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
     border-bottom: 1px solid var(--border);
     position: sticky;
     top: 0;
@@ -882,14 +882,19 @@ body.dark-mode .form-control:focus {
     .container {
         padding: 0 1rem;
     }
-    
+
     .hero-content h1 {
         font-size: 2rem;
     }
-    
+
     .hero-stats {
         flex-direction: column;
         gap: 1.5rem;
     }
 }
-  
+
+/* Utility classes */
+.d-none {
+    display: none;
+}
+
