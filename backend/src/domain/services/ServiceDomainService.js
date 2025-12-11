@@ -1,77 +1,87 @@
+const { logger } = require('../../utils/logger');
+
 /**
  * ServiceDomainService
  * Couche métier pour la gestion des services proposés par l'artisan
  *
- * Cette version MVP utilise des données en mémoire alignées avec le catalogue front existant.
- * Jalon futur : remplacer par ServiceRepository avec requêtes PostgreSQL.
+ * Responsabilités :
+ * - Orchestration de la logique métier liée aux services
+ * - Appel au ServiceRepository pour l'accès aux données
+ * - Application des règles métier (filtrage, validation, transformation)
+ * - Abstraction de la persistance vis-à-vis de la couche API
+ *
+ * Pattern : Service métier avec injection de dépendances (Repository)
  */
+class ServiceDomainService {
+  constructor(serviceRepository) {
+    if (!serviceRepository) {
+      throw new Error(
+        'ServiceDomainService requires a ServiceRepository instance'
+      );
+    }
+    this.serviceRepository = serviceRepository;
+  }
 
-// Données en dur alignées avec js/booking-core.js du front
-// Format conforme au modèle de domaine (domain-model.md)
-const ARTISAN_ID = 'artisan-demo-1';
+  /**
+   * Liste tous les services actifs pour l'artisan
+   * @returns {Promise<Array>} Liste des services actifs
+   */
+  async listActiveServices() {
+    try {
+      logger.info('ServiceDomainService: listing active services');
+      const services = await this.serviceRepository.listActive();
+      logger.info(
+        `ServiceDomainService: ${services.length} active services found`
+      );
+      return services;
+    } catch (error) {
+      logger.error('ServiceDomainService: error listing active services', {
+        error: error.message,
+        stack: error.stack,
+      });
+      throw error;
+    }
+  }
 
-const SERVICES_IN_MEMORY = [
-  {
-    id: 'diag',
-    artisanId: ARTISAN_ID,
-    name: 'Diagnostic et audit complet',
-    description:
-      'Diagnostic plomberie avec rapport détaillé et recommandations',
-    durationMinutes: 30,
-    basePriceCents: 4000, // 40,00 €
-    depositRate: 0.3, // 30%
-    isActive: true,
-  },
-  {
-    id: 'urgence',
-    artisanId: ARTISAN_ID,
-    name: 'Intervention urgente',
-    description: 'Dépannage sous 2 heures, disponible 24/7',
-    durationMinutes: 45,
-    basePriceCents: 12000, // 120,00 €
-    depositRate: 0.4, // 40%
-    isActive: true,
-  },
-  {
-    id: 'maintenance',
-    artisanId: ARTISAN_ID,
-    name: 'Maintenance planifiée',
-    description: 'Entretien préventif avec créneaux réguliers',
-    durationMinutes: 60,
-    basePriceCents: 8000, // 80,00 €
-    depositRate: 0.3, // 30%
-    isActive: true,
-  },
-  {
-    id: 'installation',
-    artisanId: ARTISAN_ID,
-    name: 'Installation / mise en service',
-    description: 'Installation complète avec garantie et suivi',
-    durationMinutes: 90,
-    basePriceCents: 16000, // 160,00 €
-    depositRate: 0.35, // 35%
-    isActive: true,
-  },
-];
+  /**
+   * Récupère un service par son identifiant
+   * @param {string} serviceId - Identifiant UUID du service
+   * @returns {Promise<Object|null>} Service trouvé ou null
+   */
+  async getServiceById(serviceId) {
+    try {
+      logger.info('ServiceDomainService: fetching service by ID', {
+        serviceId,
+      });
+      const service = await this.serviceRepository.findById(serviceId);
+      if (service) {
+        logger.info('ServiceDomainService: service found', { serviceId });
+      } else {
+        logger.warn('ServiceDomainService: service not found', { serviceId });
+      }
+      return service;
+    } catch (error) {
+      logger.error('ServiceDomainService: error fetching service by ID', {
+        serviceId,
+        error: error.message,
+      });
+      throw error;
+    }
+  }
 
-/**
- * Liste tous les services actifs pour l'artisan
- * @returns {Array} Liste des services actifs
- */
-const listActiveServices = () =>
-  SERVICES_IN_MEMORY.filter((service) => service.isActive);
+  /**
+   * Calcule le montant de l'acompte pour un service donné
+   * Règle métier : acompte = prix de base × taux d'acompte
+   * @param {Object} service - Entité service
+   * @returns {number} Montant de l'acompte en centimes
+   */
+  // eslint-disable-next-line class-methods-use-this
+  calculateDepositAmount(service) {
+    if (!service || !service.basePriceCents || !service.depositRate) {
+      throw new Error('Invalid service data for deposit calculation');
+    }
+    return Math.round(service.basePriceCents * service.depositRate);
+  }
+}
 
-/**
- * Récupère un service par son identifiant
- * @param {string} serviceId - Identifiant du service
- * @returns {Object|null} Service trouvé ou null
- */
-const getServiceById = (serviceId) =>
-  SERVICES_IN_MEMORY.find(
-    (service) => service.id === serviceId && service.isActive
-  ) || null;
-
-module.exports = {
-  listActiveServices,
-  getServiceById,
-};
+module.exports = { ServiceDomainService };

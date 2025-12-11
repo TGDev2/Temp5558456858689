@@ -6,7 +6,8 @@ const morgan = require('morgan');
 const { logger } = require('./utils/logger');
 const { errorHandler } = require('./api/middlewares/errorHandler');
 const healthRoutes = require('./api/routes/healthRoutes');
-const serviceRoutes = require('./api/routes/serviceRoutes');
+const { createServiceRouter } = require('./api/routes/serviceRoutes');
+const { initializeDependencies } = require('./infrastructure/dependencies');
 
 const app = express();
 
@@ -44,9 +45,12 @@ if (process.env.NODE_ENV !== 'test') {
   );
 }
 
+// Initialisation des dépendances
+const deps = initializeDependencies();
+
 // Routes API v1
 app.use('/api/v1/health', healthRoutes);
-app.use('/api/v1/services', serviceRoutes);
+app.use('/api/v1/services', createServiceRouter(deps.services.serviceDomainService));
 
 // Route racine
 app.get('/', (req, res) => {

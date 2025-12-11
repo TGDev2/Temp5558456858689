@@ -1,39 +1,21 @@
 const express = require('express');
-const { listServices } = require('../controllers/serviceController');
-const { validate } = require('../middlewares/validate');
-const { listServicesQuerySchema } = require('../validators/serviceSchemas');
-
-const router = express.Router();
+const {
+  createListServicesHandler,
+} = require('../controllers/serviceController');
 
 /**
- * GET /api/v1/services
- * Liste tous les services actifs proposés par l'artisan
- *
- * Query params: aucun pour le MVP
- *
- * Réponse 200 OK:
- * {
- *   "services": [
- *     {
- *       "id": "diag",
- *       "name": "Diagnostic et audit complet",
- *       "description": "...",
- *       "durationMinutes": 30,
- *       "basePriceCents": 4000,
- *       "depositRate": 0.3,
- *       "isActive": true
- *     }
- *   ]
- * }
- *
- * Réponse 500 Internal Server Error:
- * {
- *   "error": {
- *     "code": "INTERNAL_ERROR",
- *     "message": "Une erreur est survenue."
- *   }
- * }
+ * Crée le routeur pour les endpoints liés aux services
+ * @param {Object} serviceDomainService - Instance du service métier ServiceDomainService
+ * @returns {express.Router} Routeur Express configuré
  */
-router.get('/', validate(listServicesQuerySchema, 'query'), listServices);
+const createServiceRouter = (serviceDomainService) => {
+  const router = express.Router();
 
-module.exports = router;
+  const listServicesHandler = createListServicesHandler(serviceDomainService);
+
+  router.get('/', listServicesHandler);
+
+  return router;
+};
+
+module.exports = { createServiceRouter };

@@ -29,8 +29,7 @@ class BookingRepository {
           deposit_rate: bookingData.depositRate,
           deposit_payment_status: bookingData.depositPaymentStatus || 'pending',
           deposit_payment_provider: bookingData.depositPaymentProvider || null,
-          deposit_payment_intent_id:
-            bookingData.depositPaymentIntentId || null,
+          deposit_payment_intent_id: bookingData.depositPaymentIntentId || null,
           notifications_email: bookingData.notificationsEmail ?? true,
           notifications_sms: bookingData.notificationsSms ?? false,
         })

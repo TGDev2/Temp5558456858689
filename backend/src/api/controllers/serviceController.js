@@ -1,6 +1,3 @@
-const {
-  listActiveServices,
-} = require('../../domain/services/ServiceDomainService');
 const { logger } = require('../../utils/logger');
 
 /**
@@ -33,7 +30,7 @@ const toServiceDTO = (service) => ({
  * {
  *   "services": [
  *     {
- *       "id": "diag",
+ *       "id": "uuid-service-1",
  *       "name": "Diagnostic et audit complet",
  *       "description": "...",
  *       "durationMinutes": 30,
@@ -44,17 +41,19 @@ const toServiceDTO = (service) => ({
  *   ]
  * }
  */
-const listServices = async (req, res, next) => {
+const createListServicesHandler = (serviceDomainService) => async (_req, res, next) => {
   try {
     logger.info('GET /api/v1/services - Consultation des services actifs');
 
-    const services = listActiveServices();
+    const services = await serviceDomainService.listActiveServices();
 
     const response = {
       services: services.map(toServiceDTO),
     };
 
-    logger.info(`GET /api/v1/services - ${services.length} services retournés`);
+    logger.info(
+      `GET /api/v1/services - ${services.length} services retournés`
+    );
 
     res.status(200).json(response);
   } catch (error) {
@@ -67,5 +66,5 @@ const listServices = async (req, res, next) => {
 };
 
 module.exports = {
-  listServices,
+  createListServicesHandler,
 };
