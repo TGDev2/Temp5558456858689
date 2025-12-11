@@ -7,6 +7,7 @@ const { BreakRuleRepository } = require('../domain/repositories/BreakRuleReposit
 const { ExternalBusyBlockRepository } = require('../domain/repositories/ExternalBusyBlockRepository');
 const { ServiceDomainService } = require('../domain/services/ServiceDomainService');
 const { SlotAvailabilityService } = require('../domain/services/SlotAvailabilityService');
+const { BookingService } = require('../domain/services/BookingService');
 
 /**
  * Module d'initialisation des dépendances
@@ -50,6 +51,12 @@ const initializeDependencies = () => {
     externalBusyBlockRepository,
   });
 
+  const bookingService = new BookingService({
+    serviceRepository,
+    bookingRepository,
+    slotAvailabilityService,
+  });
+
   dependencies = {
     knex,
     repositories: {
@@ -63,6 +70,7 @@ const initializeDependencies = () => {
     services: {
       serviceDomainService,
       slotAvailabilityService,
+      bookingService,
     },
   };
 
