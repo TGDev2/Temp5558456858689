@@ -7,6 +7,7 @@ const { logger } = require('./utils/logger');
 const { errorHandler } = require('./api/middlewares/errorHandler');
 const healthRoutes = require('./api/routes/healthRoutes');
 const { createServiceRouter } = require('./api/routes/serviceRoutes');
+const { createAvailabilityRoutes } = require('./api/routes/availabilityRoutes');
 const { initializeDependencies } = require('./infrastructure/dependencies');
 
 const app = express();
@@ -51,6 +52,13 @@ const deps = initializeDependencies();
 // Routes API v1
 app.use('/api/v1/health', healthRoutes);
 app.use('/api/v1/services', createServiceRouter(deps.services.serviceDomainService));
+app.use(
+  '/api/v1/availability',
+  createAvailabilityRoutes({
+    serviceRepository: deps.repositories.serviceRepository,
+    slotAvailabilityService: deps.services.slotAvailabilityService,
+  })
+);
 
 // Route racine
 app.get('/', (req, res) => {
@@ -61,6 +69,7 @@ app.get('/', (req, res) => {
     endpoints: {
       health: 'GET /api/v1/health',
       services: 'GET /api/v1/services',
+      availability: 'GET /api/v1/availability?serviceId={uuid}&date={YYYY-MM-DD}',
     },
   });
 });
