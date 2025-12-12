@@ -14,7 +14,7 @@ const errorHandler = (err, req, res, _next) => {
   });
 
   // Déterminer le code HTTP à renvoyer
-  const statusCode = err.statusCode || err.status || 500;
+  const statusCode = err.httpStatus || err.statusCode || err.status || 500;
 
   // En production, on masque les détails techniques des erreurs 500
   const message =

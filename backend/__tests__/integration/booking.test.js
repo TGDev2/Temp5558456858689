@@ -11,7 +11,7 @@ jest.mock('stripe', () => {
       }),
     },
     webhooks: {
-      constructEvent: jest.fn((body, signature, secret) => {
+      constructEvent: jest.fn((body, signature) => {
         // Simuler la vérification de signature Stripe
         if (!signature || signature !== 'valid_stripe_signature') {
           const error = new Error('Invalid signature');
@@ -127,8 +127,8 @@ describe('POST /api/v1/bookings - Cycle complet réservation + paiement Stripe',
     expect(payment.clientSecret).toContain('pi_mock_test_123456_secret');
     expect(payment.paymentIntentId).toBe('pi_mock_test_123456');
 
-    const bookingId = booking.id;
-    const paymentIntentId = payment.paymentIntentId;
+    const { id: bookingId } = booking;
+    const { paymentIntentId } = payment;
 
     // Vérifier la persistance en base - statut initial "pending"
     const bookingInDb = await knex('bookings').where({ id: bookingId }).first();

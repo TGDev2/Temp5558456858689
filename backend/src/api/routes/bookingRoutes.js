@@ -1,7 +1,17 @@
 const express = require('express');
 const { validate } = require('../middlewares/validate');
-const { createBookingSchema } = require('../validators/bookingSchemas');
-const { createBooking } = require('../controllers/bookingController');
+const {
+  createBookingSchema,
+  getBookingByCodeSchema,
+  cancelBookingSchema,
+  rescheduleBookingSchema,
+} = require('../validators/bookingSchemas');
+const {
+  createBooking,
+  getBookingByCode,
+  cancelBooking,
+  rescheduleBooking,
+} = require('../controllers/bookingController');
 
 /**
  * Routes pour les réservations et webhook Stripe
@@ -23,6 +33,27 @@ const createBookingRoutes = (dependencies) => {
     '/',
     validate(createBookingSchema, 'body'),
     createBooking(dependencies)
+  );
+
+  // GET /api/v1/bookings/public - Consulter une réservation
+  router.get(
+    '/public',
+    validate(getBookingByCodeSchema, 'query'),
+    getBookingByCode(dependencies)
+  );
+
+  // POST /api/v1/bookings/:code/cancel - Annuler une réservation
+  router.post(
+    '/:code/cancel',
+    validate(cancelBookingSchema, 'body'),
+    cancelBooking(dependencies)
+  );
+
+  // POST /api/v1/bookings/:code/reschedule - Replanifier une réservation
+  router.post(
+    '/:code/reschedule',
+    validate(rescheduleBookingSchema, 'body'),
+    rescheduleBooking(dependencies)
   );
 
   // Note: Le webhook Stripe est configuré directement dans app.js

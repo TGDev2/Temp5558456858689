@@ -6,6 +6,8 @@ const {
   SlotUnavailableError,
   ServiceNotFoundError,
   InvalidBookingDataError,
+  BookingNotFoundError,
+  BookingAlreadyCancelledError,
 } = require('../errors/DomainError');
 
 /**
@@ -283,6 +285,185 @@ class BookingService {
     // Pour le MVP, on suppose que toutes les dates sont en heure locale française
     // Dans une version future, utiliser le timezone de l'artisan depuis la BDD
     return `${date}T${time}:00+01:00`;
+  }
+
+  /**
+   * Récupère une réservation par son code public et l'email du client
+   *
+   * @param {string} publicCode - Code public de la réservation (AC-XXXXXX)
+   * @param {string} email - Email du client
+   * @returns {Promise<Object>} Réservation trouvée
+   * @throws {BookingNotFoundError} Si la réservation n'existe pas ou l'email ne correspond pas
+   */
+  async findByCodeAndEmail(publicCode, email) {
+    try {
+      logger.info('BookingService: Finding booking by code and email', {
+        publicCode,
+        email,
+      });
+
+      const booking = await this.bookingRepository.findByCodeAndEmail(
+        publicCode,
+        email
+      );
+
+      if (!booking) {
+        logger.warn('Booking not found with provided code and email', {
+          publicCode,
+        });
+        throw new BookingNotFoundError(
+          'Réservation introuvable avec ce code et cet email.'
+        );
+      }
+
+      logger.info('Booking found successfully', {
+        bookingId: booking.id,
+        publicCode: booking.publicCode,
+      });
+
+      return booking;
+    } catch (error) {
+      logger.error('BookingService: Error finding booking', {
+        error: error.message,
+        publicCode,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Annule une réservation
+   *
+   * @param {string} publicCode - Code public de la réservation
+   * @param {string} email - Email du client pour authentification
+   * @returns {Promise<Object>} Réservation annulée
+   * @throws {BookingNotFoundError} Si la réservation n'existe pas
+   * @throws {BookingAlreadyCancelledError} Si la réservation est déjà annulée
+   */
+  async cancelBooking(publicCode, email) {
+    try {
+      logger.info('BookingService: Canceling booking', {
+        publicCode,
+        email,
+      });
+
+      // 1. Vérifier que la réservation existe et que l'email correspond
+      const booking = await this.findByCodeAndEmail(publicCode, email);
+
+      // 2. Vérifier que la réservation n'est pas déjà annulée
+      if (booking.status === 'cancelled') {
+        logger.warn('Booking already cancelled', {
+          bookingId: booking.id,
+          publicCode,
+        });
+        throw new BookingAlreadyCancelledError();
+      }
+
+      // 3. Mettre à jour le statut à "cancelled"
+      const cancelledBooking = await this.bookingRepository.updateStatus(
+        booking.id,
+        'cancelled'
+      );
+
+      logger.info('Booking cancelled successfully', {
+        bookingId: booking.id,
+        publicCode: booking.publicCode,
+      });
+
+      return cancelledBooking;
+    } catch (error) {
+      logger.error('BookingService: Error canceling booking', {
+        error: error.message,
+        publicCode,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Replanifie une réservation vers une nouvelle date/heure
+   *
+   * @param {string} publicCode - Code public de la réservation
+   * @param {string} email - Email du client pour authentification
+   * @param {Object} rescheduleData - Nouvelles données
+   * @param {string} rescheduleData.newDate - Nouvelle date (YYYY-MM-DD)
+   * @param {string} rescheduleData.newTime - Nouvelle heure (HH:MM)
+   * @returns {Promise<Object>} Réservation replanifiée
+   * @throws {BookingNotFoundError} Si la réservation n'existe pas
+   * @throws {BookingAlreadyCancelledError} Si la réservation est annulée
+   * @throws {SlotUnavailableError} Si le nouveau créneau n'est pas disponible
+   */
+  async rescheduleBooking(publicCode, email, rescheduleData) {
+    try {
+      logger.info('BookingService: Rescheduling booking', {
+        publicCode,
+        email,
+        newDate: rescheduleData.newDate,
+        newTime: rescheduleData.newTime,
+      });
+
+      // 1. Vérifier que la réservation existe et que l'email correspond
+      const booking = await this.findByCodeAndEmail(publicCode, email);
+
+      // 2. Vérifier que la réservation n'est pas annulée
+      if (booking.status === 'cancelled') {
+        logger.warn('Cannot reschedule a cancelled booking', {
+          bookingId: booking.id,
+          publicCode,
+        });
+        throw new BookingAlreadyCancelledError(
+          'Impossible de replanifier une réservation annulée.'
+        );
+      }
+
+      // 3. Récupérer le service pour valider le nouveau créneau
+      const service = await this.serviceRepository.findById(booking.serviceId);
+
+      if (!service || !service.isActive) {
+        logger.warn('Service not found or inactive for rescheduling', {
+          serviceId: booking.serviceId,
+        });
+        throw new ServiceNotFoundError();
+      }
+
+      // 4. Valider la disponibilité du nouveau créneau
+      await this.validateSlotAvailability(
+        service,
+        rescheduleData.newDate,
+        rescheduleData.newTime
+      );
+
+      // 5. Construire la nouvelle date/heure ISO 8601
+      const newStartDateTime = this.buildStartDateTime(
+        rescheduleData.newDate,
+        rescheduleData.newTime
+      );
+
+      // 6. Mettre à jour la réservation
+      const rescheduledBooking = await this.bookingRepository.update(
+        booking.id,
+        {
+          start_datetime: newStartDateTime,
+          status: 'rescheduled',
+        }
+      );
+
+      logger.info('Booking rescheduled successfully', {
+        bookingId: booking.id,
+        publicCode: booking.publicCode,
+        oldStartDateTime: booking.startDateTime,
+        newStartDateTime,
+      });
+
+      return rescheduledBooking;
+    } catch (error) {
+      logger.error('BookingService: Error rescheduling booking', {
+        error: error.message,
+        publicCode,
+        rescheduleData,
+      });
+      throw error;
+    }
   }
 }
 

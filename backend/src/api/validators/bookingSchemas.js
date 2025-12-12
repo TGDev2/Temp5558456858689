@@ -91,6 +91,88 @@ const createBookingSchema = Joi.object({
   }).optional(),
 });
 
+/**
+ * Schéma de validation pour GET /api/v1/bookings/public
+ * Consultation d'une réservation avec code et email
+ */
+const getBookingByCodeSchema = Joi.object({
+  code: Joi.string()
+    .pattern(/^AC-[A-Z0-9]{6}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'code doit être au format AC-XXXXXX',
+      'any.required': 'code est requis',
+    }),
+
+  email: Joi.string()
+    .email()
+    .required()
+    .messages({
+      'string.email': 'email doit être une adresse email valide',
+      'any.required': 'email est requis',
+    }),
+});
+
+/**
+ * Schéma de validation pour POST /api/v1/bookings/{code}/cancel
+ * Annulation d'une réservation
+ */
+const cancelBookingSchema = Joi.object({
+  email: Joi.string()
+    .email()
+    .required()
+    .messages({
+      'string.email': 'email doit être une adresse email valide',
+      'any.required': 'email est requis',
+    }),
+});
+
+/**
+ * Schéma de validation pour POST /api/v1/bookings/{code}/reschedule
+ * Replanification d'une réservation
+ */
+const rescheduleBookingSchema = Joi.object({
+  email: Joi.string()
+    .email()
+    .required()
+    .messages({
+      'string.email': 'email doit être une adresse email valide',
+      'any.required': 'email est requis',
+    }),
+
+  newDate: Joi.string()
+    .isoDate()
+    .required()
+    .custom((value, helpers) => {
+      // Vérifier que la date n'est pas dans le passé
+      const requestedDate = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (requestedDate < today) {
+        return helpers.error('date.past');
+      }
+
+      return value;
+    })
+    .messages({
+      'string.isoDate': 'newDate doit être au format YYYY-MM-DD',
+      'any.required': 'newDate est requise',
+      'date.past': 'newDate ne peut pas être antérieure à aujourd\'hui',
+    }),
+
+  newTime: Joi.string()
+    .pattern(/^\d{2}:\d{2}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'newTime doit être au format HH:MM',
+      'any.required': 'newTime est requis',
+    }),
+});
+
 module.exports = {
   createBookingSchema,
+  getBookingByCodeSchema,
+  cancelBookingSchema,
+  rescheduleBookingSchema,
 };

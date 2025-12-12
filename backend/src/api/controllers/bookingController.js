@@ -222,7 +222,194 @@ const handleStripeWebhook = (dependencies) => async (req, res, next) => {
     }
   };
 
+/**
+ * Récupère une réservation par son code public et l'email du client
+ *
+ * @param {Object} req - Requête Express
+ * @param {Object} req.query - Paramètres de requête
+ * @param {string} req.query.code - Code public de la réservation (AC-XXXXXX)
+ * @param {string} req.query.email - Email du client
+ * @param {Object} res - Réponse Express
+ * @param {Function} next - Middleware suivant
+ * @returns {Promise<void>}
+ */
+const getBookingByCode = (dependencies) => async (req, res, next) => {
+    try {
+      const { code, email } = req.query;
+
+      logger.info('GET /api/v1/bookings/public - Request received', {
+        code,
+        email,
+      });
+
+      const { bookingService } = dependencies;
+
+      // Récupérer la réservation via BookingService
+      const booking = await bookingService.findByCodeAndEmail(code, email);
+
+      logger.info('Booking retrieved successfully', {
+        bookingId: booking.id,
+        publicCode: booking.publicCode,
+      });
+
+      // Retourner la réservation
+      return res.status(200).json({
+        booking: {
+          id: booking.id,
+          publicCode: booking.publicCode,
+          status: booking.status,
+          customerName: booking.customerName,
+          customerEmail: booking.customerEmail,
+          customerPhone: booking.customerPhone,
+          startDateTime: booking.startDateTime,
+          durationMinutes: booking.durationMinutes,
+          priceCents: booking.priceCents,
+          depositAmountCents: booking.depositAmountCents,
+          depositPaymentStatus: booking.depositPaymentStatus,
+          createdAt: booking.createdAt,
+          updatedAt: booking.updatedAt,
+        },
+      });
+    } catch (error) {
+      logger.error('Error in getBookingByCode controller', {
+        code: req.query?.code,
+        error: error.message,
+        stack: error.stack,
+      });
+
+      return next(error);
+    }
+  };
+
+/**
+ * Annule une réservation
+ *
+ * @param {Object} req - Requête Express
+ * @param {Object} req.params - Paramètres de route
+ * @param {string} req.params.code - Code public de la réservation
+ * @param {Object} req.body - Corps de la requête
+ * @param {string} req.body.email - Email du client pour authentification
+ * @param {Object} res - Réponse Express
+ * @param {Function} next - Middleware suivant
+ * @returns {Promise<void>}
+ */
+const cancelBooking = (dependencies) => async (req, res, next) => {
+    try {
+      const { code } = req.params;
+      const { email } = req.body;
+
+      logger.info('POST /api/v1/bookings/:code/cancel - Request received', {
+        code,
+        email,
+      });
+
+      const { bookingService } = dependencies;
+
+      // Annuler la réservation via BookingService
+      const cancelledBooking = await bookingService.cancelBooking(code, email);
+
+      logger.info('Booking cancelled successfully', {
+        bookingId: cancelledBooking.id,
+        publicCode: cancelledBooking.publicCode,
+      });
+
+      // Retourner la réservation annulée
+      return res.status(200).json({
+        booking: {
+          id: cancelledBooking.id,
+          publicCode: cancelledBooking.publicCode,
+          status: cancelledBooking.status,
+          customerName: cancelledBooking.customerName,
+          customerEmail: cancelledBooking.customerEmail,
+          startDateTime: cancelledBooking.startDateTime,
+          durationMinutes: cancelledBooking.durationMinutes,
+          updatedAt: cancelledBooking.updatedAt,
+        },
+        message: 'Réservation annulée avec succès.',
+      });
+    } catch (error) {
+      logger.error('Error in cancelBooking controller', {
+        code: req.params?.code,
+        error: error.message,
+        stack: error.stack,
+      });
+
+      return next(error);
+    }
+  };
+
+/**
+ * Replanifie une réservation vers une nouvelle date/heure
+ *
+ * @param {Object} req - Requête Express
+ * @param {Object} req.params - Paramètres de route
+ * @param {string} req.params.code - Code public de la réservation
+ * @param {Object} req.body - Corps de la requête
+ * @param {string} req.body.email - Email du client pour authentification
+ * @param {string} req.body.newDate - Nouvelle date (YYYY-MM-DD)
+ * @param {string} req.body.newTime - Nouvelle heure (HH:MM)
+ * @param {Object} res - Réponse Express
+ * @param {Function} next - Middleware suivant
+ * @returns {Promise<void>}
+ */
+const rescheduleBooking = (dependencies) => async (req, res, next) => {
+    try {
+      const { code } = req.params;
+      const { email, newDate, newTime } = req.body;
+
+      logger.info('POST /api/v1/bookings/:code/reschedule - Request received', {
+        code,
+        email,
+        newDate,
+        newTime,
+      });
+
+      const { bookingService } = dependencies;
+
+      // Replanifier la réservation via BookingService
+      const rescheduledBooking = await bookingService.rescheduleBooking(
+        code,
+        email,
+        { newDate, newTime }
+      );
+
+      logger.info('Booking rescheduled successfully', {
+        bookingId: rescheduledBooking.id,
+        publicCode: rescheduledBooking.publicCode,
+        newStartDateTime: rescheduledBooking.startDateTime,
+      });
+
+      // Retourner la réservation replanifiée
+      return res.status(200).json({
+        booking: {
+          id: rescheduledBooking.id,
+          publicCode: rescheduledBooking.publicCode,
+          status: rescheduledBooking.status,
+          customerName: rescheduledBooking.customerName,
+          customerEmail: rescheduledBooking.customerEmail,
+          startDateTime: rescheduledBooking.startDateTime,
+          durationMinutes: rescheduledBooking.durationMinutes,
+          updatedAt: rescheduledBooking.updatedAt,
+        },
+        message: 'Réservation replanifiée avec succès.',
+      });
+    } catch (error) {
+      logger.error('Error in rescheduleBooking controller', {
+        code: req.params?.code,
+        newDate: req.body?.newDate,
+        newTime: req.body?.newTime,
+        error: error.message,
+        stack: error.stack,
+      });
+
+      return next(error);
+    }
+  };
+
 module.exports = {
   createBooking,
   handleStripeWebhook,
+  getBookingByCode,
+  cancelBooking,
+  rescheduleBooking,
 };
