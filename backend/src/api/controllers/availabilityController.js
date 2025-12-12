@@ -24,8 +24,7 @@ const { logger } = require('../../utils/logger');
  * @param {Function} next - Middleware suivant
  * @returns {Promise<void>}
  */
-const getAvailability = (dependencies) => {
-  return async (req, res, next) => {
+const getAvailability = (dependencies) => async (req, res, next) => {
     try {
       const { serviceId, date } = req.query;
 
@@ -135,7 +134,6 @@ const getAvailability = (dependencies) => {
       return next(error);
     }
   };
-};
 
 module.exports = {
   getAvailability,

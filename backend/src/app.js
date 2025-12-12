@@ -8,6 +8,7 @@ const { errorHandler } = require('./api/middlewares/errorHandler');
 const healthRoutes = require('./api/routes/healthRoutes');
 const { createServiceRouter } = require('./api/routes/serviceRoutes');
 const { createAvailabilityRoutes } = require('./api/routes/availabilityRoutes');
+const { createBookingRoutes } = require('./api/routes/bookingRoutes');
 const { initializeDependencies } = require('./infrastructure/dependencies');
 
 const app = express();
@@ -31,7 +32,23 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Body parsing middleware
+// Initialisation des dépendances (avant les middlewares pour le webhook)
+const deps = initializeDependencies();
+
+// Webhook Stripe - DOIT être avant express.json() pour recevoir le raw body
+const { handleStripeWebhook } = require('./api/controllers/bookingController');
+
+app.post(
+  '/api/v1/bookings/webhook',
+  express.raw({ type: 'application/json' }),
+  handleStripeWebhook({
+    stripe: deps.stripe,
+    bookingRepository: deps.repositories.bookingRepository,
+    webhookSecret: deps.webhookSecret,
+  })
+);
+
+// Body parsing middleware (après le webhook)
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -46,9 +63,6 @@ if (process.env.NODE_ENV !== 'test') {
   );
 }
 
-// Initialisation des dépendances
-const deps = initializeDependencies();
-
 // Routes API v1
 app.use('/api/v1/health', healthRoutes);
 app.use('/api/v1/services', createServiceRouter(deps.services.serviceDomainService));
@@ -57,6 +71,15 @@ app.use(
   createAvailabilityRoutes({
     serviceRepository: deps.repositories.serviceRepository,
     slotAvailabilityService: deps.services.slotAvailabilityService,
+  })
+);
+app.use(
+  '/api/v1/bookings',
+  createBookingRoutes({
+    bookingService: deps.services.bookingService,
+    bookingRepository: deps.repositories.bookingRepository,
+    stripe: deps.stripe,
+    webhookSecret: deps.webhookSecret,
   })
 );
 
@@ -70,6 +93,7 @@ app.get('/', (req, res) => {
       health: 'GET /api/v1/health',
       services: 'GET /api/v1/services',
       availability: 'GET /api/v1/availability?serviceId={uuid}&date={YYYY-MM-DD}',
+      bookings: 'POST /api/v1/bookings',
     },
   });
 });

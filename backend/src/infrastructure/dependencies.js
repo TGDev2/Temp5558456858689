@@ -1,3 +1,4 @@
+const Stripe = require('stripe');
 const { getKnexInstance } = require('./database');
 const { ServiceRepository } = require('../domain/repositories/ServiceRepository');
 const { BookingRepository } = require('../domain/repositories/BookingRepository');
@@ -33,6 +34,24 @@ const initializeDependencies = () => {
 
   const knex = getKnexInstance();
 
+  // Initialisation de Stripe
+  const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+  // En mode test, utiliser des clés mock si non définies
+  const isTestMode = process.env.NODE_ENV === 'test';
+  const finalStripeKey = stripeSecretKey || (isTestMode ? 'sk_test_mock_key' : null);
+  const finalWebhookSecret = webhookSecret || (isTestMode ? 'whsec_test_mock' : null);
+
+  if (!finalStripeKey && !isTestMode) {
+    throw new Error('STRIPE_SECRET_KEY is required in environment variables');
+  }
+  if (!finalWebhookSecret && !isTestMode) {
+    throw new Error('STRIPE_WEBHOOK_SECRET is required in environment variables');
+  }
+
+  const stripe = new Stripe(finalStripeKey);
+
   // Initialisation des repositories
   const serviceRepository = new ServiceRepository(knex);
   const bookingRepository = new BookingRepository(knex);
@@ -59,6 +78,8 @@ const initializeDependencies = () => {
 
   dependencies = {
     knex,
+    stripe,
+    webhookSecret: finalWebhookSecret,
     repositories: {
       serviceRepository,
       bookingRepository,

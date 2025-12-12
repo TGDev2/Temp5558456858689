@@ -127,16 +127,14 @@ class SlotAvailabilityService {
       );
 
       // 7. Vérifier la disponibilité de chaque créneau
-      const slotsWithAvailability = allSlots.map((slotTime) => {
-        return this.checkSlotAvailability(
+      const slotsWithAvailability = allSlots.map((slotTime) => this.checkSlotAvailability(
           dateStr,
           slotTime,
           serviceDurationMinutes,
           breakRules,
           bookings,
           externalBusyBlocks
-        );
-      });
+        ));
 
       logger.info('Slots generated successfully', {
         artisanId,
@@ -189,12 +187,10 @@ class SlotAvailabilityService {
       currentMinutes += stepMinutes
     ) {
       // Vérifier que ce créneau n'est pas pendant une pause
-      const isDuringBreak = breakRules.some((breakRule) => {
-        return (
+      const isDuringBreak = breakRules.some((breakRule) => (
           currentMinutes >= breakRule.startMinutes &&
           currentMinutes < breakRule.endMinutes
-        );
-      });
+        ));
 
       if (!isDuringBreak) {
         slots.push(this.minutesToTimeString(currentMinutes));
