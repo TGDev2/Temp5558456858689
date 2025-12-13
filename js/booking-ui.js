@@ -683,6 +683,9 @@
     const code = manageCode.value.trim();
     const email = manageEmail.value.trim();
 
+    // Stocker l'email pour les appels cancel/reschedule
+    window.lastManageEmail = email;
+
     let bookingResponse = null;
     try {
       bookingResponse = await ACApi.getBookingPublic({ code, email });
@@ -729,7 +732,10 @@
 
     let response;
     try {
-      response = await ACApi.cancelBooking({ code: currentBooking.code });
+      response = await ACApi.cancelBooking({
+        code: currentBooking.code,
+        email: currentBooking.email
+      });
     } catch (error) {
       console.error("Erreur lors de l’annulation de la réservation", error);
       notify(
@@ -823,6 +829,7 @@
     try {
       response = await ACApi.rescheduleBooking({
         code: currentBooking.code,
+        email: currentBooking.email,
         newDate,
         newTime: selectedRescheduleTime
       });
@@ -904,6 +911,9 @@
       if (!services.length) {
         throw new Error('Aucun service disponible');
       }
+
+      // Stocker les services en cache global pour api-client.js
+      window.cachedServices = services;
 
       serviceSelect.innerHTML = '';
 
